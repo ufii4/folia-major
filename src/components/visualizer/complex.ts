@@ -1,4 +1,16 @@
-import type { VisualizerMode } from '../../types';
+import {
+    DEFAULT_CADENZA_TUNING,
+    DEFAULT_CAPPELLA_TUNING,
+    DEFAULT_FUME_TUNING,
+    DEFAULT_PARTITA_TUNING,
+    DEFAULT_TILT_TUNING,
+    type CadenzaTuning,
+    type CappellaTuning,
+    type FumeTuning,
+    type PartitaTuning,
+    type TiltTuning,
+    type VisualizerMode,
+} from '../../types';
 
 // src/components/visualizer/complex.ts
 // Owns the persisted visualizer complex schema and safe localStorage parsing.
@@ -42,6 +54,7 @@ export interface VisualizerBgNode extends VisualizerNodeBase {
     config: {
         opacity?: number;
         useCoverColor?: boolean;
+        hideShapes?: boolean;
     };
 }
 
@@ -51,6 +64,12 @@ export interface VisualizerMainNode extends VisualizerNodeBase {
     config: {
         mode: VisualizerMode;
         opacity?: number;
+        lyricsFontScale?: number;
+        cadenzaTuning?: CadenzaTuning;
+        partitaTuning?: PartitaTuning;
+        fumeTuning?: FumeTuning;
+        cappellaTuning?: CappellaTuning;
+        tiltTuning?: TiltTuning;
     };
 }
 
@@ -60,6 +79,8 @@ export interface VisualizerOverlayNode extends VisualizerNodeBase {
     config: {
         opacity?: number;
         hideTranslation?: boolean;
+        translationFontSizeRem?: number;
+        upcomingFontSizeRem?: number;
     };
 }
 
@@ -99,6 +120,90 @@ const clampOpacity = (value: unknown, fallback: number) => {
     return Number.isFinite(parsed) ? Math.min(1, Math.max(0, parsed)) : fallback;
 };
 
+const clampNumber = (value: unknown, fallback: number, min: number, max: number) => {
+    const parsed = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+};
+
+const normalizeCadenzaTuning = (value: unknown): CadenzaTuning | undefined => {
+    if (!isRecord(value)) {
+        return undefined;
+    }
+
+    return {
+        fontScale: clampNumber(value.fontScale, DEFAULT_CADENZA_TUNING.fontScale, 0.6, 1.8),
+        widthRatio: clampNumber(value.widthRatio, DEFAULT_CADENZA_TUNING.widthRatio, 0.4, 1),
+        motionAmount: clampNumber(value.motionAmount, DEFAULT_CADENZA_TUNING.motionAmount, 0, 2),
+        glowIntensity: clampNumber(value.glowIntensity, DEFAULT_CADENZA_TUNING.glowIntensity, 0, 2),
+        beamIntensity: clampNumber(value.beamIntensity, DEFAULT_CADENZA_TUNING.beamIntensity, 0, 2),
+    };
+};
+
+const normalizePartitaTuning = (value: unknown): PartitaTuning | undefined => {
+    if (!isRecord(value)) {
+        return undefined;
+    }
+
+    const staggerMin = clampNumber(value.staggerMin, DEFAULT_PARTITA_TUNING.staggerMin, 0, 240);
+    const staggerMax = clampNumber(value.staggerMax, DEFAULT_PARTITA_TUNING.staggerMax, 0, 320);
+    return {
+        showGuideLines: typeof value.showGuideLines === 'boolean' ? value.showGuideLines : DEFAULT_PARTITA_TUNING.showGuideLines,
+        useSemanticLayout: typeof value.useSemanticLayout === 'boolean' ? value.useSemanticLayout : DEFAULT_PARTITA_TUNING.useSemanticLayout,
+        staggerMin: Math.min(staggerMin, staggerMax),
+        staggerMax: Math.max(staggerMin, staggerMax),
+    };
+};
+
+const normalizeFumeTuning = (value: unknown): FumeTuning | undefined => {
+    if (!isRecord(value)) {
+        return undefined;
+    }
+
+    return {
+        hidePrintSymbols: typeof value.hidePrintSymbols === 'boolean' ? value.hidePrintSymbols : DEFAULT_FUME_TUNING.hidePrintSymbols,
+        disableGeometricBackground: typeof value.disableGeometricBackground === 'boolean'
+            ? value.disableGeometricBackground
+            : DEFAULT_FUME_TUNING.disableGeometricBackground,
+        backgroundObjectOpacity: clampNumber(value.backgroundObjectOpacity, DEFAULT_FUME_TUNING.backgroundObjectOpacity, 0, 1),
+        textHoldRatio: clampNumber(value.textHoldRatio, DEFAULT_FUME_TUNING.textHoldRatio, 0, 1),
+        cameraTrackingMode: value.cameraTrackingMode === 'stepped' || value.cameraTrackingMode === 'smooth'
+            ? value.cameraTrackingMode
+            : DEFAULT_FUME_TUNING.cameraTrackingMode,
+        cameraSpeed: clampNumber(value.cameraSpeed, DEFAULT_FUME_TUNING.cameraSpeed, 0.55, 1.85),
+        glowIntensity: clampNumber(value.glowIntensity, DEFAULT_FUME_TUNING.glowIntensity, 0, 1.8),
+        heroScale: clampNumber(value.heroScale, DEFAULT_FUME_TUNING.heroScale, 0.82, 1.32),
+    };
+};
+
+const normalizeCappellaTuning = (value: unknown): CappellaTuning | undefined => {
+    if (!isRecord(value)) {
+        return undefined;
+    }
+
+    return {
+        showEmoMessages: typeof value.showEmoMessages === 'boolean' ? value.showEmoMessages : DEFAULT_CAPPELLA_TUNING.showEmoMessages,
+        emojiPackSource: value.emojiPackSource === 'custom' ? 'custom' : DEFAULT_CAPPELLA_TUNING.emojiPackSource,
+        avatarSource: value.avatarSource === 'builtin' || value.avatarSource === 'color' || value.avatarSource === 'cover'
+            ? value.avatarSource
+            : DEFAULT_CAPPELLA_TUNING.avatarSource,
+    };
+};
+
+const normalizeTiltTuning = (value: unknown): TiltTuning | undefined => {
+    if (!isRecord(value)) {
+        return undefined;
+    }
+
+    const colorScheme = ['default', 'swap', 'accentAll', 'primaryAll'].includes(String(value.colorScheme))
+        ? value.colorScheme as TiltTuning['colorScheme']
+        : DEFAULT_TILT_TUNING.colorScheme;
+    return {
+        splitProbability: clampNumber(value.splitProbability, DEFAULT_TILT_TUNING.splitProbability, 0, 1),
+        tiltStyleProbability: clampNumber(value.tiltStyleProbability, DEFAULT_TILT_TUNING.tiltStyleProbability, 0, 1),
+        colorScheme,
+    };
+};
+
 export const createDefaultVisualizerComplex = (): VisualizerComplexV1 => ({
     version: 1,
     nodes: [
@@ -122,7 +227,7 @@ export const createDefaultVisualizerComplex = (): VisualizerComplexV1 => ({
             label: 'Geometry',
             enabled: true,
             position: { x: 330, y: 170 },
-            config: { opacity: 1 },
+            config: { opacity: 1, hideShapes: false },
         },
         {
             id: 'bg-vignette',
@@ -206,6 +311,7 @@ const normalizeNode = (node: unknown): VisualizerComplexNode | null => {
             config: {
                 opacity: clampOpacity(config.opacity, 1),
                 useCoverColor: typeof config.useCoverColor === 'boolean' ? config.useCoverColor : undefined,
+                hideShapes: typeof config.hideShapes === 'boolean' ? config.hideShapes : undefined,
             },
         };
     }
@@ -219,6 +325,14 @@ const normalizeNode = (node: unknown): VisualizerComplexNode | null => {
             config: {
                 mode: typeof config.mode === 'string' ? config.mode as VisualizerMode : 'classic',
                 opacity: clampOpacity(config.opacity, 1),
+                lyricsFontScale: config.lyricsFontScale === undefined
+                    ? undefined
+                    : clampNumber(config.lyricsFontScale, 1, 0.6, 1.8),
+                cadenzaTuning: normalizeCadenzaTuning(config.cadenzaTuning),
+                partitaTuning: normalizePartitaTuning(config.partitaTuning),
+                fumeTuning: normalizeFumeTuning(config.fumeTuning),
+                cappellaTuning: normalizeCappellaTuning(config.cappellaTuning),
+                tiltTuning: normalizeTiltTuning(config.tiltTuning),
             },
         };
     }
@@ -232,6 +346,12 @@ const normalizeNode = (node: unknown): VisualizerComplexNode | null => {
             config: {
                 opacity: clampOpacity(config.opacity, 0.6),
                 hideTranslation: typeof config.hideTranslation === 'boolean' ? config.hideTranslation : false,
+                translationFontSizeRem: config.translationFontSizeRem === undefined
+                    ? undefined
+                    : clampNumber(config.translationFontSizeRem, 1.1, 0.7, 1.8),
+                upcomingFontSizeRem: config.upcomingFontSizeRem === undefined
+                    ? undefined
+                    : clampNumber(config.upcomingFontSizeRem, 0.95, 0.6, 1.4),
             },
         };
     }

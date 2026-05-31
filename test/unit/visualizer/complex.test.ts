@@ -83,6 +83,45 @@ describe('visualizer complex', () => {
         expect(node.role === 'visualizerBg' ? node.config.opacity : null).toBe(1);
     });
 
+    it('normalizes concrete visualizer node parameters', () => {
+        const normalized = normalizeVisualizerComplex({
+            version: 1,
+            nodes: [
+                {
+                    id: 'main',
+                    role: 'visualizerMain',
+                    kind: 'mainRenderer',
+                    label: 'Main',
+                    enabled: true,
+                    position: { x: 0, y: 0 },
+                    config: {
+                        mode: 'fume',
+                        opacity: 1,
+                        lyricsFontScale: 4,
+                        fumeTuning: {
+                            hidePrintSymbols: true,
+                            disableGeometricBackground: false,
+                            backgroundObjectOpacity: 3,
+                            textHoldRatio: -1,
+                            cameraTrackingMode: 'bad',
+                            cameraSpeed: 8,
+                            glowIntensity: 4,
+                            heroScale: 3,
+                        },
+                    },
+                },
+            ],
+            edges: [],
+            output: { bgNodeIds: [], mainNodeIds: ['main'], overlayNodeIds: [] },
+        });
+
+        const node = normalized.nodes[0];
+        expect(node.role === 'visualizerMain' ? node.config.lyricsFontScale : null).toBe(1.8);
+        expect(node.role === 'visualizerMain' ? node.config.fumeTuning?.backgroundObjectOpacity : null).toBe(1);
+        expect(node.role === 'visualizerMain' ? node.config.fumeTuning?.textHoldRatio : null).toBe(0);
+        expect(node.role === 'visualizerMain' ? node.config.fumeTuning?.cameraTrackingMode : null).toBe('smooth');
+    });
+
     it('writes normalized complex data to localStorage', () => {
         const complex = createDefaultVisualizerComplex();
         writeStoredVisualizerComplex(complex);

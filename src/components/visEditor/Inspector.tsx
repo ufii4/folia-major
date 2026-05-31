@@ -1,8 +1,9 @@
-import type { ChangeEvent } from 'react';
-import type { VisualizerComplexNode, VisualizerComplexV1 } from '../visualizer/complex';
 import type { Theme } from '../../types';
+import type { VisualizerComplexNode, VisualizerComplexV1 } from '../visualizer/complex';
+import { CheckboxField, FieldGroup, RangeField, renderMainModeControls } from './InspectorControls';
 
-// Right-side inspector for editing the selected persisted complex node.
+// src/components/visEditor/Inspector.tsx
+// Right-side inspector for selecting and editing persisted complex nodes.
 interface InspectorProps {
     complex: VisualizerComplexV1;
     selectedNodeId: string | null;
@@ -11,8 +12,11 @@ interface InspectorProps {
     onChange: (complex: VisualizerComplexV1) => void;
 }
 
-const hasOpacityConfig = (node: VisualizerComplexNode): node is Extract<VisualizerComplexNode, { config: { opacity?: number } }> =>
-    'config' in node && 'opacity' in node.config;
+const updateOutput = (nodes: VisualizerComplexNode[]) => ({
+    bgNodeIds: nodes.filter(node => node.role === 'visualizerBg' && node.enabled).map(node => node.id),
+    mainNodeIds: nodes.filter(node => node.role === 'visualizerMain' && node.enabled).map(node => node.id),
+    overlayNodeIds: nodes.filter(node => node.role === 'visualizerOverlay' && node.enabled).map(node => node.id),
+});
 
 const updateNode = (
     complex: VisualizerComplexV1,
@@ -20,16 +24,11 @@ const updateNode = (
     updater: (node: VisualizerComplexNode) => VisualizerComplexNode,
 ) => {
     const nodes = complex.nodes.map(node => (node.id === nodeId ? updater(node) : node));
-    return {
-        ...complex,
-        nodes,
-        output: {
-            bgNodeIds: nodes.filter(node => node.role === 'visualizerBg' && node.enabled).map(node => node.id),
-            mainNodeIds: nodes.filter(node => node.role === 'visualizerMain' && node.enabled).map(node => node.id),
-            overlayNodeIds: nodes.filter(node => node.role === 'visualizerOverlay' && node.enabled).map(node => node.id),
-        },
-    };
+    return { ...complex, nodes, output: updateOutput(nodes) };
 };
+
+const hasOpacityConfig = (node: VisualizerComplexNode): node is Extract<VisualizerComplexNode, { config: { opacity?: number } }> =>
+    'config' in node && 'opacity' in node.config;
 
 export const Inspector = ({ complex, selectedNodeId, theme, isDaylight, onChange }: InspectorProps) => {
     const selectedNode = complex.nodes.find(node => node.id === selectedNodeId) ?? null;
@@ -47,37 +46,6 @@ export const Inspector = ({ complex, selectedNodeId, theme, isDaylight, onChange
         onChange(updateNode(complex, selectedNode.id, updater));
     };
 
-    const onLabelChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const label = event.target.value;
-        setNode(node => ({ ...node, label }));
-    };
-
-    const onEnabledChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const enabled = event.target.checked;
-        setNode(node => ({ ...node, enabled }));
-    };
-
-    const onOpacityChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const opacity = Math.min(1, Math.max(0, Number(event.target.value)));
-        setNode(node => {
-            switch (node.role) {
-                case 'visualizerBg':
-                    return { ...node, config: { ...node.config, opacity } };
-                case 'visualizerMain':
-                    return { ...node, config: { ...node.config, opacity } };
-                case 'visualizerOverlay':
-                    return { ...node, config: { ...node.config, opacity } };
-                default:
-                    return node;
-            }
-        });
-    };
-
-    const onModeChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const mode = event.target.value;
-        setNode(node => node.role === 'visualizerMain' ? { ...node, config: { ...node.config, mode } } : node);
-    };
-
     return (
         <aside className="vis-editor-inspector" style={{ borderColor: `${theme.accentColor}33` }}>
             <div className="vis-editor-panel-title">Inspector</div>
@@ -85,13 +53,10 @@ export const Inspector = ({ complex, selectedNodeId, theme, isDaylight, onChange
 
             <label className="vis-editor-field">
                 <span>Label</span>
-                <input value={selectedNode.label} onChange={onLabelChange} />
+                <input value={selectedNode.label} onChange={event => setNode(node => ({ ...node, label: event.target.value }))} />
             </label>
 
-            <label className="vis-editor-check">
-                <input type="checkbox" checked={selectedNode.enabled} onChange={onEnabledChange} />
-                <span>Enabled</span>
-            </label>
+            <CheckboxField label="Enabled" checked={selectedNode.enabled} onChange={checked => setNode(node => ({ ...node, enabled: checked }))} />
 
             <div className="vis-editor-readonly-grid">
                 <span>Role</span>
@@ -101,29 +66,54 @@ export const Inspector = ({ complex, selectedNodeId, theme, isDaylight, onChange
             </div>
 
             {hasOpacityConfig(selectedNode) ? (
-                <label className="vis-editor-field">
-                    <span>Opacity {selectedNode.config.opacity?.toFixed(2) ?? '1.00'}</span>
-                    <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={selectedNode.config.opacity ?? 1}
-                        onChange={onOpacityChange}
-                    />
-                </label>
+                <RangeField
+                    label="Opacity"
+                    value={selectedNode.config.opacity ?? 1}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    onChange={value => setNode(node => {
+                        if (node.role === 'visualizerBg' || node.role === 'visualizerMain' || node.role === 'visualizerOverlay') {
+                            return { ...node, config: { ...node.config, opacity: value } };
+                        }
+                        return node;
+                    })}
+                />
             ) : null}
 
-            {selectedNode.role === 'visualizerMain' ? (
-                <label className="vis-editor-field">
-                    <span>Main renderer mode</span>
-                    <input value={selectedNode.config.mode} onChange={onModeChange} />
-                </label>
+            {selectedNode.role === 'visualizerBg' && selectedNode.kind === 'coverFluid' ? (
+                <CheckboxField
+                    label="Use cover color"
+                    checked={selectedNode.config.useCoverColor ?? true}
+                    onChange={checked => setNode(node => node.role === 'visualizerBg' ? { ...node, config: { ...node.config, useCoverColor: checked } } : node)}
+                />
             ) : null}
 
-            <div className="vis-editor-inspector__hint">
-                {isDaylight ? 'Daylight preview colors are active.' : 'Dark preview colors are active.'}
-            </div>
+            {selectedNode.role === 'visualizerBg' && selectedNode.kind === 'geometric' ? (
+                <CheckboxField
+                    label="Hide geometry shapes"
+                    checked={selectedNode.config.hideShapes ?? false}
+                    onChange={checked => setNode(node => node.role === 'visualizerBg' ? { ...node, config: { ...node.config, hideShapes: checked } } : node)}
+                />
+            ) : null}
+
+            {selectedNode.role === 'visualizerMain' ? renderMainModeControls(selectedNode, setNode) : null}
+
+            {selectedNode.role === 'visualizerOverlay' ? (
+                <FieldGroup title="Subtitle overlay">
+                    <CheckboxField label="Hide translation" checked={selectedNode.config.hideTranslation ?? false} onChange={checked => setNode(node => node.role === 'visualizerOverlay' ? { ...node, config: { ...node.config, hideTranslation: checked } } : node)} />
+                    <RangeField label="Translation font" value={selectedNode.config.translationFontSizeRem ?? 1.1} min={0.7} max={1.8} step={0.01} onChange={value => setNode(node => node.role === 'visualizerOverlay' ? { ...node, config: { ...node.config, translationFontSizeRem: value } } : node)} />
+                    <RangeField label="Upcoming font" value={selectedNode.config.upcomingFontSizeRem ?? 0.95} min={0.6} max={1.4} step={0.01} onChange={value => setNode(node => node.role === 'visualizerOverlay' ? { ...node, config: { ...node.config, upcomingFontSizeRem: value } } : node)} />
+                </FieldGroup>
+            ) : null}
+
+            {selectedNode.role === 'visualizerMain' && complex.output.mainNodeIds.length > 1 ? (
+                <div className="vis-editor-inspector__hint">Multiple main renderers are active; opacity and GPU cost stack in output order.</div>
+            ) : (
+                <div className="vis-editor-inspector__hint">
+                    {isDaylight ? 'Daylight preview colors are active.' : 'Dark preview colors are active.'}
+                </div>
+            )}
         </aside>
     );
 };

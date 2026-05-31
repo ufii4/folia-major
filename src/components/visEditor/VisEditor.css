@@ -81,18 +81,51 @@
 
 .vis-editor__body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+    grid-template-columns: minmax(13rem, 17rem) minmax(0, 1fr) minmax(20rem, 26rem);
     gap: 1rem;
     min-height: 0;
     flex: 1;
     padding: 1rem;
 }
 
+.vis-editor-palette,
 .vis-editor__canvas,
 .vis-editor__side,
 .vis-editor-preview,
 .vis-editor-inspector {
     min-height: 0;
+}
+
+.vis-editor-palette {
+    overflow-y: auto;
+    border: 1px solid color-mix(in srgb, var(--vis-editor-primary) 12%, transparent);
+    border-radius: 0.75rem;
+    background: var(--vis-editor-panel);
+    backdrop-filter: blur(18px);
+}
+
+.vis-editor-palette__group {
+    padding: 0 0.85rem 0.9rem;
+}
+
+.vis-editor-palette__title {
+    margin-bottom: 0.5rem;
+    color: var(--vis-editor-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.vis-editor-palette__buttons {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.vis-editor-palette button {
+    width: 100%;
+    padding: 0.48rem 0.62rem;
+    text-align: left;
 }
 
 .vis-editor__canvas {
@@ -178,11 +211,13 @@
 }
 
 .vis-editor-field input[type='text'],
-.vis-editor-field input:not([type]) {
+.vis-editor-field input:not([type]),
+.vis-editor-field select {
     width: 100%;
 }
 
-.vis-editor input {
+.vis-editor input,
+.vis-editor select {
     min-width: 0;
     border: 1px solid color-mix(in srgb, var(--vis-editor-primary) 14%, transparent);
     border-radius: 0.5rem;
@@ -192,9 +227,28 @@
     font: inherit;
 }
 
+.vis-editor select {
+    cursor: pointer;
+}
+
 .vis-editor input[type='range'] {
     padding: 0;
     accent-color: var(--vis-editor-accent);
+}
+
+.vis-editor-field-group {
+    margin: 0 0 1rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid color-mix(in srgb, var(--vis-editor-primary) 10%, transparent);
+}
+
+.vis-editor-field-group__title {
+    margin: 0.75rem 1rem 0.75rem;
+    color: var(--vis-editor-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .vis-editor-readonly-grid {
@@ -286,6 +340,11 @@
     color: #111111;
 }
 
+.vis-editor .react-flow__edge.selected path {
+    stroke: var(--vis-editor-accent);
+    stroke-width: 3;
+}
+
 @media (max-width: 900px) {
     .vis-editor__header {
         align-items: flex-start;
@@ -295,6 +354,10 @@
     .vis-editor__body {
         grid-template-columns: 1fr;
         overflow-y: auto;
+    }
+
+    .vis-editor-palette {
+        max-height: 18rem;
     }
 
     .vis-editor__canvas {

@@ -35,7 +35,7 @@ const renderBackgroundNode = (node: VisualizerBgNode, props: VisualizerSharedPro
     if (node.kind === 'coverFluid') {
         return (
             <div key={node.id} className="absolute inset-0" style={{ opacity }}>
-                <FluidBackground coverUrl={props.coverUrl} theme={props.theme} />
+                <FluidBackground coverUrl={node.config.useCoverColor === false ? null : props.coverUrl} theme={props.theme} />
             </div>
         );
     }
@@ -48,7 +48,7 @@ const renderBackgroundNode = (node: VisualizerBgNode, props: VisualizerSharedPro
                     audioPower={props.audioPower}
                     audioBands={props.audioBands}
                     seed={props.seed}
-                    hideShapes={props.disableGeometricBackground}
+                    hideShapes={Boolean(props.disableGeometricBackground || node.config.hideShapes)}
                     disableVignette
                     paused={props.paused}
                 />
@@ -87,6 +87,12 @@ const renderMainNode = (node: VisualizerMainNode, props: VisualizerSharedProps) 
             transparentBackground
             disableGeometricBackground
             disableVignette
+            lyricsFontScale={node.config.lyricsFontScale ?? props.lyricsFontScale}
+            cadenzaTuning={node.config.cadenzaTuning ?? props.cadenzaTuning}
+            partitaTuning={node.config.partitaTuning ?? props.partitaTuning}
+            fumeTuning={node.config.fumeTuning ?? props.fumeTuning}
+            cappellaTuning={node.config.cappellaTuning ?? props.cappellaTuning}
+            tiltTuning={node.config.tiltTuning ?? props.tiltTuning}
             hideTranslationSubtitle
             onBack={undefined}
         />
@@ -110,8 +116,8 @@ const renderOverlayNode = (
             recentCompletedLine={runtime.recentCompletedLine}
             nextLines={runtime.nextLines}
             theme={props.theme}
-            translationFontSize="1.1rem"
-            upcomingFontSize="0.95rem"
+            translationFontSize={`${node.config.translationFontSizeRem ?? 1.1}rem`}
+            upcomingFontSize={`${node.config.upcomingFontSizeRem ?? 0.95}rem`}
             opacity={node.config.opacity ?? 0.6}
             isPlayerChromeHidden={props.isPlayerChromeHidden}
             hideTranslationSubtitle={Boolean(props.hideTranslationSubtitle || node.config.hideTranslation)}

@@ -10,7 +10,8 @@ import { SongResult } from '../../../types';
 import { parseLyricsByFormat } from '../parserCore';
 import { detectTimedLyricFormat } from '../formatDetection';
 import { krcDecrypt } from './krcDecrypt';
-import { applyDetectedChorusEffects } from '../chorusEffects';
+import { applyDetectedChorusEffects, applyNeteaseChorusByTime } from '../chorusEffects';
+import type { NeteaseChorusRange } from '../chorusEffects';
 
 const isElectron = typeof window !== 'undefined' && (window as any).electron;
 
@@ -212,7 +213,10 @@ async function searchKugouLyricsOld(keyword: string, page = 1): Promise<SongResu
 /**
  * Fetches and decrypts Kugou lyrics.
  */
-export async function fetchKugouLyrics(song: SongResult): Promise<any | null> {
+export async function fetchKugouLyrics(
+  song: SongResult,
+  options: { chorusRanges?: NeteaseChorusRange[] } = {}
+): Promise<any | null> {
   if (!song.kgHash) {
     throw new Error('Missing song hash for Kugou lyric download');
   }
@@ -283,8 +287,12 @@ export async function fetchKugouLyrics(song: SongResult): Promise<any | null> {
     }
 
     const parsed = parseLyricsByFormat(format, lyricText, '');
-    if (parsed) {
-      parsed.isWordByWord = format === 'krc' || format === 'enhanced-lrc';
+    if (!parsed) {
+      return null;
+    }
+    parsed.isWordByWord = format === 'krc' || format === 'enhanced-lrc';
+    if (options.chorusRanges && options.chorusRanges.length > 0) {
+      return applyNeteaseChorusByTime(parsed, options.chorusRanges);
     }
     return applyDetectedChorusEffects(parsed, lyricText);
   } catch (error) {

@@ -12,6 +12,7 @@ export default {
     "downloadingLyrics": "少女祈祷中...",
     "lyricsLoaded": "歌词已加载！",
     "lyricsFailed": "歌词加载失败: {{error}}",
+    "matchingBestLyrics": "正在匹配最佳歌词...",
     "enterSongId": "请输入歌曲ID或导入文件",
     "apiNotConfigured": "API基础URL未配置。",
     "searchError": "搜索错误。",

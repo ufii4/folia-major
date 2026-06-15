@@ -63,10 +63,11 @@ export async function loadOnlineSongLyrics(
         onLyrics: (lyrics: LyricData | null) => void;
         onPureMusicChange?: (isPureMusic: boolean) => void;
         onStateChange?: (state: OnlineLyricsState | null) => void;
+        onAutoMatchStart?: () => void;
         onDone: () => void;
     }
 ): Promise<void> {
-    const { isCurrent, onLyrics, onPureMusicChange, onStateChange, onDone } = callbacks;
+    const { isCurrent, onLyrics, onPureMusicChange, onStateChange, onAutoMatchStart, onDone } = callbacks;
     const lyricCacheKey = getOnlineSongCacheKey('lyric', song);
     const onlineLyricsState = await loadOnlineLyricsState(song);
 
@@ -123,6 +124,7 @@ export async function loadOnlineSongLyrics(
                     transLrc: null,
                     isPureMusic,
                     lyrics: null,
+                    chorusRanges: [],
                 };
             }
 
@@ -133,6 +135,7 @@ export async function loadOnlineSongLyrics(
                 transLrc: null,
                 isPureMusic,
                 lyrics,
+                chorusRanges: [],
             };
         })()
         : await (async () => {
@@ -149,8 +152,15 @@ export async function loadOnlineSongLyrics(
     const settings = useSettingsUiStore.getState();
     if ((!resolvedLyrics || !resolvedLyrics.isWordByWord) && settings.enableAlternativeLyricSources && settings.autoUseBestLyric) {
         try {
+            onAutoMatchStart?.();
             const artistName = song.artists?.map(a => a.name).join(', ') || '';
-            const bestMatch = await autoMatchBestLyric(song.name, artistName, song.duration || song.dt || 0);
+            const bestMatch = await autoMatchBestLyric(song.name, artistName, song.duration || song.dt || 0, {
+                neteaseCandidate: {
+                    id: song.id,
+                    lyrics: parsedLyrics,
+                    chorusRanges: processed.chorusRanges
+                }
+            });
             if (bestMatch && (bestMatch.source === 'qq' || bestMatch.source === 'kugou')) {
                 const overrideState: OnlineLyricsState = {
                     lyricsSource: 'online',

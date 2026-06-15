@@ -9,7 +9,8 @@ import { SongResult } from '../../../types';
 import { parseLyricsByFormat } from '../parserCore';
 import { detectTimedLyricFormat } from '../formatDetection';
 import { qrcDecrypt } from './qrcDecrypt';
-import { applyDetectedChorusEffects } from '../chorusEffects';
+import { applyDetectedChorusEffects, applyNeteaseChorusByTime } from '../chorusEffects';
+import type { NeteaseChorusRange } from '../chorusEffects';
 
 const isElectron = typeof window !== 'undefined' && (window as any).electron;
 
@@ -143,7 +144,10 @@ export async function searchQQLyrics(keyword: string, page = 1): Promise<SongRes
 /**
  * Fetches and decrypts QQ Music lyrics.
  */
-export async function fetchQQLyrics(song: SongResult): Promise<any | null> {
+export async function fetchQQLyrics(
+  song: SongResult,
+  options: { chorusRanges?: NeteaseChorusRange[] } = {}
+): Promise<any | null> {
   if (!song.id || !song.qqMid) {
     throw new Error('Missing song ID or mid');
   }
@@ -185,8 +189,12 @@ export async function fetchQQLyrics(song: SongResult): Promise<any | null> {
     const format = isQrc ? 'qrc' : detectTimedLyricFormat(decryptedLyric);
 
     const parsed = parseLyricsByFormat(format, decryptedLyric, decryptedTrans);
-    if (parsed) {
-      parsed.isWordByWord = isQrc;
+    if (!parsed) {
+      return null;
+    }
+    parsed.isWordByWord = isQrc;
+    if (options.chorusRanges && options.chorusRanges.length > 0) {
+      return applyNeteaseChorusByTime(parsed, options.chorusRanges);
     }
     return applyDetectedChorusEffects(parsed, decryptedLyric);
   } catch (error) {

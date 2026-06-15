@@ -1,5 +1,6 @@
 import { LyricData } from '../../types';
 import { applyDetectedChorusEffects, applyNeteaseChorusByTime } from './chorusEffects';
+import type { NeteaseChorusRange } from './chorusEffects';
 import { detectTimedLyricFormat } from './formatDetection';
 import { resolveLyricProcessingOptions } from './filtering';
 import { hasNeteasePureMusicFlag, isPureMusicLyricText } from './pureMusic';
@@ -16,6 +17,7 @@ export interface ExtractedNeteaseLyricPayload {
 
 export interface ProcessedNeteaseLyricsResult extends ExtractedNeteaseLyricPayload {
     lyrics: LyricData | null;
+    chorusRanges?: NeteaseChorusRange[];
 }
 
 export const extractNeteaseLyricPayload = (source?: RawNeteaseLyric | null): ExtractedNeteaseLyricPayload => {
@@ -44,7 +46,8 @@ export const processNeteaseLyrics = async (
     if (!primaryLyrics || payload.isPureMusic) {
         return {
             ...payload,
-            lyrics: null
+            lyrics: null,
+            chorusRanges: []
         };
     }
 
@@ -60,6 +63,8 @@ export const processNeteaseLyrics = async (
         lyrics.isWordByWord = !!payload.yrcLrc;
     }
 
+    let chorusRanges: NeteaseChorusRange[] = [];
+
     if (lyrics && payload.mainLrc) {
         let chorusApplied = false;
         if (options.songId) {
@@ -72,6 +77,7 @@ export const processNeteaseLyrics = async (
                             startTime: (r.startTime ?? 0) / 1000,
                             endTime: (r.endTime ?? 0) / 1000
                         }));
+                        chorusRanges = parsedRanges;
                         lyrics = applyNeteaseChorusByTime(lyrics, parsedRanges);
                         chorusApplied = true;
                         console.log(`[processNeteaseLyrics] Applied API-based chorus detection for song ${options.songId}. Ranges: ${JSON.stringify(parsedRanges)}`);
@@ -90,6 +96,7 @@ export const processNeteaseLyrics = async (
 
     return {
         ...payload,
-        lyrics
+        lyrics,
+        chorusRanges
     };
 };

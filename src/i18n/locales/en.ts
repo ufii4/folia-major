@@ -12,6 +12,7 @@ export default {
     "downloadingLyrics": "Downloading lyrics...",
     "lyricsLoaded": "Lyrics loaded!",
     "lyricsFailed": "Lyrics failed: {{error}}",
+    "matchingBestLyrics": "Matching the best lyrics...",
     "enterSongId": "Enter Song ID or Import File",
     "apiNotConfigured": "API Base URL not configured.",
     "searchError": "Search error.",

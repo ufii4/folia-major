@@ -392,7 +392,7 @@ export async function qrcDecrypt(encryptedHexOrBytes: string | Uint8Array): Prom
       paddedBlock.set(block);
     }
     const decryptedBlock = tripledes_crypt(paddedBlock, schedule);
-    decryptedBytes.set(decryptedBlock, i);
+    decryptedBytes.set(decryptedBlock.subarray(0, block.length), i);
   }
 
   return await decompressDeflate(decryptedBytes);

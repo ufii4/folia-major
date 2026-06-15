@@ -7,7 +7,6 @@
 
 export async function handleLyricProxy(request: Request): Promise<Response> {
   const corsHeaders = {
-    'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,OPTIONS,PATCH,DELETE,POST,PUT',
     'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
@@ -28,7 +27,7 @@ export async function handleLyricProxy(request: Request): Promise<Response> {
   }
 
   try {
-    const targetUrl = new URL(decodeURIComponent(targetUrlStr));
+    const targetUrl = new URL(targetUrlStr);
     const hostname = targetUrl.hostname;
 
     // Security check: only allow proxying to qq.com and kugou.com domains

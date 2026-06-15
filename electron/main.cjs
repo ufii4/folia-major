@@ -647,10 +647,15 @@ function setupCorsBypassHandlers() {
     const responseHeaders = { ...details.responseHeaders };
     const originUrl = details.url;
 
-    const isTargetDomain = originUrl.includes('.qq.com/') || 
-                           originUrl.includes('.kugou.com/') ||
-                           originUrl.includes('//qq.com/') ||
-                           originUrl.includes('//kugou.com/');
+    let isTargetDomain = false;
+    try {
+      const parsedUrl = new URL(originUrl);
+      const hostname = parsedUrl.hostname;
+      isTargetDomain = hostname === 'qq.com' || hostname.endsWith('.qq.com') ||
+                       hostname === 'kugou.com' || hostname.endsWith('.kugou.com');
+    } catch (error) {
+      isTargetDomain = false;
+    }
 
     if (isTargetDomain) {
       responseHeaders['Access-Control-Allow-Origin'] = ['*'];

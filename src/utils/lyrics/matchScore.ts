@@ -4,11 +4,21 @@ import { normalizeLyricMatchDurationMs } from './duration';
 // src/utils/lyrics/matchScore.ts
 
 /**
+ * Removes punctuation and symbols while preserving letters across languages.
+ */
+export function normalizeLyricMatchText(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/[\p{P}\p{S}]/gu, '')
+        .trim();
+}
+
+/**
  * Calculates Jaccard character similarity between two normalized strings.
  */
 function stringSimilarity(s1: string, s2: string): number {
-    const n1 = s1.toLowerCase().replace(/[^\w\s\u4e00-\u9fa5]/g, '').trim();
-    const n2 = s2.toLowerCase().replace(/[^\w\s\u4e00-\u9fa5]/g, '').trim();
+    const n1 = normalizeLyricMatchText(s1);
+    const n2 = normalizeLyricMatchText(s2);
     if (!n1 || !n2) return 0;
     if (n1 === n2) return 1.0;
     

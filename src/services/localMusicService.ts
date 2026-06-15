@@ -6,6 +6,7 @@ import { parseEmbeddedMetadataAsync, type EmbeddedMetadataResult } from '../util
 import { processNeteaseLyrics } from '../utils/lyrics/neteaseProcessing';
 import { useSettingsUiStore } from '../stores/useSettingsUiStore';
 import { autoMatchBestLyric } from '../utils/lyrics/autoMatchBestLyric';
+import { normalizeLyricMatchText } from '../utils/lyrics/matchScore';
 
 
 type EmbeddedMetadata = EmbeddedMetadataResult;
@@ -1195,11 +1196,7 @@ export async function importFolder(expectedRootName?: string): Promise<LocalSong
 
 // Helper function to normalize title for comparison
 function normalizeTitle(title: string): string {
-    return title
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s\u4e00-\u9fa5]/g, '') // Remove punctuation except Chinese characters
-        .replace(/\s+/g, ''); // Remove all whitespace
+    return normalizeLyricMatchText(title).replace(/\s+/g, '');
 }
 
 // Helper function to check if two titles match

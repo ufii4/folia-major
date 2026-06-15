@@ -35,8 +35,6 @@ const LabSettingsModal: React.FC<LabSettingsModalProps> = ({
     const { t } = useTranslation();
     const {
         disableHomeDynamicBackground,
-        enableAlternativeLyricSources,
-        autoUseBestLyric,
         hidePlayerProgressBar,
         hidePlayerRightPanelButton,
         hidePlayerTranslationSubtitle,
@@ -45,8 +43,6 @@ const LabSettingsModal: React.FC<LabSettingsModalProps> = ({
         staticMode,
         visualizerFrameRate,
         onToggleDisableHomeDynamicBackground,
-        onToggleAlternativeLyricSources,
-        onToggleAutoUseBestLyric,
         onToggleHidePlayerProgressBar,
         onToggleHidePlayerRightPanelButton,
         onToggleHidePlayerTranslationSubtitle,
@@ -58,8 +54,6 @@ const LabSettingsModal: React.FC<LabSettingsModalProps> = ({
         onVisualizerFrameRateChange,
     } = useSettingsUiStore(useShallow(state => ({
         disableHomeDynamicBackground: state.disableHomeDynamicBackground,
-        enableAlternativeLyricSources: state.enableAlternativeLyricSources,
-        autoUseBestLyric: state.autoUseBestLyric,
         hidePlayerProgressBar: state.hidePlayerProgressBar,
         hidePlayerRightPanelButton: state.hidePlayerRightPanelButton,
         hidePlayerTranslationSubtitle: state.hidePlayerTranslationSubtitle,
@@ -68,8 +62,6 @@ const LabSettingsModal: React.FC<LabSettingsModalProps> = ({
         staticMode: state.staticMode,
         visualizerFrameRate: state.visualizerFrameRate,
         onToggleDisableHomeDynamicBackground: state.handleToggleDisableHomeDynamicBackground,
-        onToggleAlternativeLyricSources: state.handleToggleAlternativeLyricSources,
-        onToggleAutoUseBestLyric: state.handleToggleAutoUseBestLyric,
         onToggleHidePlayerProgressBar: state.handleToggleHidePlayerProgressBar,
         onToggleHidePlayerRightPanelButton: state.handleToggleHidePlayerRightPanelButton,
         onToggleHidePlayerTranslationSubtitle: state.handleToggleHidePlayerTranslationSubtitle,
@@ -163,8 +155,6 @@ const LabSettingsModal: React.FC<LabSettingsModalProps> = ({
                                 onClick={() => {
                                     onToggleStaticMode(false);
                                     onToggleDisableHomeDynamicBackground(false);
-                                    onToggleAlternativeLyricSources(false);
-                                    onToggleAutoUseBestLyric(false);
                                     onToggleHidePlayerProgressBar(false);
                                     onToggleHidePlayerTranslationSubtitle(false);
                                     onToggleHidePlayerRightPanelButton(false);
@@ -214,35 +204,6 @@ const LabSettingsModal: React.FC<LabSettingsModalProps> = ({
                                         </div>
                                     </div>
                                     {renderToggle(disableHomeDynamicBackground, () => onToggleDisableHomeDynamicBackground(!disableHomeDynamicBackground))}
-                                </div>
-
-                                <div className={`rounded-xl border overflow-hidden ${settingsCardClass}`}>
-                                    <div className="p-4 flex items-center justify-between gap-4">
-                                        <div className="space-y-1">
-                                            <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                                                <Settings2 size={14} />
-                                                {t('options.enableAlternativeLyricSources') || '更多歌词源'}
-                                            </div>
-                                            <div className="text-xs opacity-50 max-w-[320px]" style={{ color: 'var(--text-secondary)' }}>
-                                                {t('options.enableAlternativeLyricSourcesDesc') || '启用备选歌词源（QQ音乐、酷狗音乐）'}
-                                            </div>
-                                        </div>
-                                        {renderToggle(enableAlternativeLyricSources, () => onToggleAlternativeLyricSources(!enableAlternativeLyricSources))}
-                                    </div>
-                                    {enableAlternativeLyricSources && (
-                                        <div className="p-4 flex items-center justify-between gap-4 border-t" style={{ borderColor: 'var(--border-primary, rgba(255,255,255,0.06))' }}>
-                                            <div className="space-y-1">
-                                                <div className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                                                    <Settings2 size={14} />
-                                                    {t('options.autoUseBestLyric') || '自动使用最佳歌词'}
-                                                </div>
-                                                <div className="text-xs opacity-50 max-w-[320px]" style={{ color: 'var(--text-secondary)' }}>
-                                                    {t('options.autoUseBestLyricDesc') || '自动检索所有歌词源，若存在完美匹配的逐字歌词则自动优先采用。'}
-                                                </div>
-                                            </div>
-                                            {renderToggle(autoUseBestLyric, () => onToggleAutoUseBestLyric(!autoUseBestLyric))}
-                                        </div>
-                                    )}
                                 </div>
 
                                 <div className={`p-4 rounded-xl border space-y-4 ${settingsCardClass}`}>

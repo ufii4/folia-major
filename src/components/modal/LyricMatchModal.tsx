@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Loader2, X, Music, Check } from 'lucide-react';
 import { LocalSong, SongResult, LyricData } from '../../types';
@@ -9,7 +9,7 @@ import { processNeteaseLyrics } from '../../utils/lyrics/neteaseProcessing';
 import { useSettingsUiStore } from '../../stores/useSettingsUiStore';
 import { searchQQLyrics, fetchQQLyrics } from '../../utils/lyrics/providers/qqLyricProvider';
 import { searchKugouLyrics, fetchKugouLyrics } from '../../utils/lyrics/providers/kugouLyricProvider';
-import { calculateMatchScore } from '../../utils/lyrics/matchScore';
+import { calculateMatchScore, normalizeLyricMatchText } from '../../utils/lyrics/matchScore';
 import { buildLyricSearchQuery } from '../../utils/lyrics/searchQuery';
 import {
     getLyricMatchSourceLabel,
@@ -54,6 +54,7 @@ const LyricMatchModal: React.FC<LyricMatchModalProps> = ({ song, onClose, onMatc
     const [isSearching, setIsSearching] = useState(false);
     const [selectedResult, setSelectedResult] = useState<SongResult | null>(null);
     const [isMatching, setIsMatching] = useState(false);
+    const searchRequestIdRef = useRef(0);
 
     const enableAlternativeLyricSources = useSettingsUiStore(state => state.enableAlternativeLyricSources);
     const [source, setSource] = useState<LyricMatchSource>('netease');
@@ -144,89 +145,36 @@ const LyricMatchModal: React.FC<LyricMatchModalProps> = ({ song, onClose, onMatc
         return t('localMusic.statusNone');
     }, [lyricsSource, song, t, source, selectedResult]);
 
-    // Initialize search
-    useEffect(() => {
-        let isCurrent = true;
-        const title = song.title || song.fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac)$/i, '');
-        const initialQuery = buildLyricSearchQuery(title, song.artist || '', song.album || song.embeddedAlbum || '');
-        setSearchQuery(initialQuery);
-        setIsSearching(true);
-        setSearchResults([]);
-        setSelectedResult(null);
-
-        void (async () => {
-            try {
-                let results: SongResult[] = [];
-                if (source === 'netease') {
-                    const res = await neteaseApi.cloudSearch(initialQuery);
-                    results = res.result?.songs ?? [];
-                } else if (source === 'qq') {
-                    results = await searchQQLyrics(initialQuery);
-                } else if (source === 'kugou') {
-                    results = await searchKugouLyrics(initialQuery);
-                }
-
-                if (!isCurrent) return;
-
-                setSearchResults(results);
-                const localTitle = song.title || song.fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac)$/i, '');
-                const exactMatch = results.find(s => isTitleMatch(localTitle, s.name));
-                if (exactMatch) {
-                    setSelectedResult(exactMatch);
-                } else if (results.length > 0) {
-                    setSelectedResult(results[0]);
-                }
-            } catch (error) {
-                console.error('Search failed:', error);
-            } finally {
-                if (isCurrent) {
-                    setIsSearching(false);
-                }
-            }
-        })();
-
-        return () => {
-            isCurrent = false;
-        };
-    }, [song, source]);
-
-    useEffect(() => {
-        if (!enableAlternativeLyricSources && source !== 'netease') {
-            setSource('netease');
-        }
-    }, [enableAlternativeLyricSources, source]);
-
     // Title matching helpers
     const normalizeTitle = (title: string): string => {
-        return title
-            .toLowerCase()
-            .trim()
-            .replace(/[^\w\s\u4e00-\u9fa5]/g, '')
-            .replace(/\s+/g, '');
+        return normalizeLyricMatchText(title).replace(/\s+/g, '');
     };
 
     const isTitleMatch = (localTitle: string, searchTitle: string): boolean => {
         return normalizeTitle(localTitle) === normalizeTitle(searchTitle);
     };
 
-    const handleSearch = async (query?: string) => {
-        const q = query || searchQuery;
+    const runSearch = async (query: string, activeSource: LyricMatchSource) => {
+        const q = query.trim();
         if (!q.trim()) return;
 
+        const requestId = ++searchRequestIdRef.current;
         setIsSearching(true);
         setSearchResults([]);
         setSelectedResult(null);
 
         try {
             let results: SongResult[] = [];
-            if (source === 'netease') {
+            if (activeSource === 'netease') {
                 const res = await neteaseApi.cloudSearch(q);
                 results = res.result?.songs ?? [];
-            } else if (source === 'qq') {
+            } else if (activeSource === 'qq') {
                 results = await searchQQLyrics(q);
-            } else if (source === 'kugou') {
+            } else if (activeSource === 'kugou') {
                 results = await searchKugouLyrics(q);
             }
+            if (requestId !== searchRequestIdRef.current) return;
+
             setSearchResults(results);
 
             const localTitle = song.title || song.fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac)$/i, '');
@@ -240,8 +188,33 @@ const LyricMatchModal: React.FC<LyricMatchModalProps> = ({ song, onClose, onMatc
         } catch (error) {
             console.error('Search failed:', error);
         } finally {
-            setIsSearching(false);
+            if (requestId === searchRequestIdRef.current) {
+                setIsSearching(false);
+            }
         }
+    };
+
+    // Initialize the query only when the target song changes.
+    useEffect(() => {
+        const title = song.title || song.fileName.replace(/\.(mp3|flac|m4a|wav|ogg|opus|aac)$/i, '');
+        const initialQuery = buildLyricSearchQuery(title, song.artist || '', song.album || song.embeddedAlbum || '');
+        setSearchQuery(initialQuery);
+        void runSearch(initialQuery, source);
+    }, [song]);
+
+    // Source changes should reuse the user's current query instead of resetting it.
+    useEffect(() => {
+        void runSearch(searchQuery, source);
+    }, [source]);
+
+    useEffect(() => {
+        if (!enableAlternativeLyricSources && source !== 'netease') {
+            setSource('netease');
+        }
+    }, [enableAlternativeLyricSources, source]);
+
+    const handleSearch = async (query?: string) => {
+        await runSearch(query || searchQuery, source);
     };
 
     const handleConfirm = async () => {

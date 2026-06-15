@@ -875,7 +875,7 @@ export const parseKRC = (
             }
             const decoded = typeof Buffer !== 'undefined'
                 ? Buffer.from(cleanB64, 'base64').toString('utf8')
-                : atob(cleanB64);
+                : new TextDecoder('utf-8').decode(Uint8Array.from(atob(cleanB64), c => c.charCodeAt(0)));
             const obj = JSON.parse(decoded);
             const translationObj = obj.content?.find((item: any) => item.type === 1);
             if (translationObj && Array.isArray(translationObj.lyricContent)) {

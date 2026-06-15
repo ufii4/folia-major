@@ -4,7 +4,6 @@ import { URL } from 'url';
 
 export default async function handler(req: any, res: any) {
   // Allow CORS for the proxy
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader(
@@ -22,7 +21,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const targetUrl = new URL(decodeURIComponent(targetUrlStr));
+    const targetUrl = new URL(targetUrlStr);
     const hostname = targetUrl.hostname;
 
     // Security check: only allow proxying to qq.com and kugou.com domains

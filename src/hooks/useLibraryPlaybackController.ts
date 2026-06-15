@@ -627,7 +627,7 @@ export function useLibraryPlaybackController({
                     const settings = useSettingsUiStore.getState();
 
                     if (settings.enableAlternativeLyricSources && settings.autoUseBestLyric) {
-                        const bestMatch = await autoMatchBestLyric(navidromeSong.name, artistName, (navidromeSong.duration || 0) * 1000);
+                        const bestMatch = await autoMatchBestLyric(navidromeSong.name, artistName, navidromeSong.duration || navidromeSong.dt || 0);
                         if (bestMatch) {
                             nextLyrics = bestMatch.lyrics;
                             autoMatchedLyrics = bestMatch.lyrics;

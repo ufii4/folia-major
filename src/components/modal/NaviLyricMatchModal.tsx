@@ -83,7 +83,7 @@ const NaviLyricMatchModal: React.FC<NaviLyricMatchModalProps> = ({ song, onClose
         return {
             title: song.name || '',
             artist: navidromeArtist || '',
-            durationMs: (song.duration || song.dt || 0) * 1000,
+            durationMs: song.duration || song.dt || 0,
         };
     }, [song, navidromeArtist]);
 

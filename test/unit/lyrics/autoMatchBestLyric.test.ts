@@ -98,6 +98,29 @@ describe('autoMatchBestLyric', () => {
         expect(searchKugouLyricsMock).not.toHaveBeenCalled();
     });
 
+    it('normalizes accidental ms * 1000 durations before filtering candidates', async () => {
+        cloudSearchMock.mockResolvedValue({ result: { songs: [] } });
+        searchQQLyricsMock.mockResolvedValue([
+            {
+                id: 201,
+                name: 'Night of Bloom',
+                duration: 286000,
+                artists: [{ id: 1, name: 'Kirara Magic' }, { id: 2, name: 'Xomu' }, { id: 3, name: 'nayuta' }],
+                qqMid: 'mid-night'
+            }
+        ]);
+        fetchQQLyricsMock.mockResolvedValue({ lines: [], isWordByWord: true });
+
+        const result = await autoMatchBestLyric(
+            'Night of Bloom (feat. nayuta)',
+            'Kirara Magic/Xomu/nayuta',
+            286000000
+        );
+
+        expect(result?.source).toBe('qq');
+        expect(result?.qqMid).toBe('mid-night');
+    });
+
     it('applies NetEase API chorus ranges to a QQ best lyric match', async () => {
         cloudSearchMock.mockResolvedValue({
             result: {

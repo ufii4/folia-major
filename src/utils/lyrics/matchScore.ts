@@ -1,4 +1,5 @@
 import { SongResult } from '../../types';
+import { normalizeLyricMatchDurationMs } from './duration';
 
 // src/utils/lyrics/matchScore.ts
 
@@ -33,7 +34,8 @@ export function calculateMatchScore(
 ): number {
     const searchTitle = result.name || '';
     const searchArtist = result.ar?.map(a => a.name).join(', ') || result.artists?.map(a => a.name).join(', ') || '';
-    const searchDurationMs = result.dt || result.duration || 0;
+    const targetDurationMs = normalizeLyricMatchDurationMs(song.durationMs);
+    const searchDurationMs = normalizeLyricMatchDurationMs(result.dt || result.duration || 0);
 
     // 1. Title Similarity (40% weight)
     const tSim = stringSimilarity(song.title, searchTitle);
@@ -45,8 +47,8 @@ export function calculateMatchScore(
 
     // 3. Duration match (30% weight)
     let durationScore = 0;
-    if (song.durationMs > 0 && searchDurationMs > 0) {
-        const diff = Math.abs(song.durationMs - searchDurationMs);
+    if (targetDurationMs > 0 && searchDurationMs > 0) {
+        const diff = Math.abs(targetDurationMs - searchDurationMs);
         if (diff <= 1000) {
             durationScore = 30; // within 1 second
         } else if (diff <= 3000) {

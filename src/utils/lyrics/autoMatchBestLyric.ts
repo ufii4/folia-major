@@ -4,6 +4,7 @@ import { processNeteaseLyrics } from './neteaseProcessing';
 import type { NeteaseChorusRange } from './chorusEffects';
 import { searchQQLyrics, fetchQQLyrics } from './providers/qqLyricProvider';
 import { searchKugouLyrics, fetchKugouLyrics } from './providers/kugouLyricProvider';
+import { normalizeLyricMatchDurationMs } from './duration';
 
 // src/utils/lyrics/autoMatchBestLyric.ts
 // Utility module for automatically matching the best word-by-word lyrics across multiple sources.
@@ -62,7 +63,8 @@ export async function autoMatchBestLyric(
     kgHash?: string;
 } | null> {
     const searchQuery = artist ? `${artist} ${title}` : title;
-    console.log(`[autoMatchBestLyric] Initiating best lyric auto-match for "${searchQuery}" (Duration: ${durationMs}ms)`);
+    const normalizedDurationMs = normalizeLyricMatchDurationMs(durationMs);
+    console.log(`[autoMatchBestLyric] Initiating best lyric auto-match for "${searchQuery}" (Duration: ${normalizedDurationMs}ms)`);
     let neteaseChorusRanges: NeteaseChorusRange[] = options.neteaseCandidate?.chorusRanges ?? [];
 
     // 1. NetEase Music
@@ -75,8 +77,8 @@ export async function autoMatchBestLyric(
             const neteaseSongs = neteaseSearchRes.result?.songs || [];
             // Filter top 5 results
             candidateSongs = neteaseSongs.slice(0, 5).filter((s: any) => {
-                const songDuration = s.dt || s.duration || 0;
-                return Math.abs(songDuration - durationMs) <= 3000 && isTitleMatch(title, s.name);
+                const songDuration = normalizeLyricMatchDurationMs(s.dt || s.duration || 0);
+                return Math.abs(songDuration - normalizedDurationMs) <= 3000 && isTitleMatch(title, s.name);
             });
         }
 
@@ -120,8 +122,8 @@ export async function autoMatchBestLyric(
         const qqSongs = await searchQQLyrics(searchQuery);
         // Filter top 5 results
         const candidateSongs = qqSongs.slice(0, 5).filter((s: any) => {
-            const songDuration = s.duration || 0;
-            return Math.abs(songDuration - durationMs) <= 3000 && isTitleMatch(title, s.name);
+            const songDuration = normalizeLyricMatchDurationMs(s.duration || 0);
+            return Math.abs(songDuration - normalizedDurationMs) <= 3000 && isTitleMatch(title, s.name);
         });
 
         for (const song of candidateSongs) {
@@ -146,8 +148,8 @@ export async function autoMatchBestLyric(
         const kugouSongs = await searchKugouLyrics(searchQuery);
         // Filter top 5 results
         const candidateSongs = kugouSongs.slice(0, 5).filter((s: any) => {
-            const songDuration = s.duration || 0;
-            return Math.abs(songDuration - durationMs) <= 3000 && isTitleMatch(title, s.name);
+            const songDuration = normalizeLyricMatchDurationMs(s.duration || 0);
+            return Math.abs(songDuration - normalizedDurationMs) <= 3000 && isTitleMatch(title, s.name);
         });
 
         for (const song of candidateSongs) {

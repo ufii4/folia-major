@@ -224,7 +224,7 @@ const LabSettingsModal: React.FC<LabSettingsModalProps> = ({
                                                 {t('options.enableAlternativeLyricSources') || '更多歌词源'}
                                             </div>
                                             <div className="text-xs opacity-50 max-w-[320px]" style={{ color: 'var(--text-secondary)' }}>
-                                                {t('options.enableAlternativeLyricSourcesDesc') || '在歌词匹配面板中显示备选歌词源（QQ音乐、酷狗音乐），支持加载与解密 QRC/KRC 歌词。'}
+                                                {t('options.enableAlternativeLyricSourcesDesc') || '启用备选歌词源（QQ音乐、酷狗音乐）'}
                                             </div>
                                         </div>
                                         {renderToggle(enableAlternativeLyricSources, () => onToggleAlternativeLyricSources(!enableAlternativeLyricSources))}
@@ -237,7 +237,7 @@ const LabSettingsModal: React.FC<LabSettingsModalProps> = ({
                                                     {t('options.autoUseBestLyric') || '自动使用最佳歌词'}
                                                 </div>
                                                 <div className="text-xs opacity-50 max-w-[320px]" style={{ color: 'var(--text-secondary)' }}>
-                                                    {t('options.autoUseBestLyricDesc') || '自动检索网易云、QQ、酷狗歌词，若存在时值完美匹配的逐字歌词则自动优先采用。'}
+                                                    {t('options.autoUseBestLyricDesc') || '自动检索所有歌词源，若存在完美匹配的逐字歌词则自动优先采用。'}
                                                 </div>
                                             </div>
                                             {renderToggle(autoUseBestLyric, () => onToggleAutoUseBestLyric(!autoUseBestLyric))}

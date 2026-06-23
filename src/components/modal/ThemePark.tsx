@@ -19,7 +19,8 @@ import {
     CadenzaTuning,
     ClassicTuning,
     DualTheme,
-    FumeTuning,
+    type FumeTuning,
+    type CieloTuning,
     MonetBackgroundImage,
     MonetBackgroundTuning,
     MonetPortraitImage,
@@ -53,6 +54,7 @@ interface ThemeParkProps {
     cadenzaTuning?: CadenzaTuning;
     partitaTuning?: PartitaTuning;
     fumeTuning?: FumeTuning;
+    cieloTuning?: CieloTuning;
     cappellaTuning?: CappellaTuning;
     monetBackgroundTuning?: MonetBackgroundTuning;
     monetTuning?: MonetTuning;
@@ -112,6 +114,7 @@ const ThemePreviewLayer: React.FC<{
     cadenzaTuning: CadenzaTuning;
     partitaTuning: PartitaTuning;
     fumeTuning: FumeTuning;
+    cieloTuning?: CieloTuning;
     cappellaTuning: CappellaTuning;
     monetBackgroundTuning: MonetBackgroundTuning;
     monetTuning: MonetTuning;
@@ -142,6 +145,7 @@ const ThemePreviewLayer: React.FC<{
     cadenzaTuning,
     partitaTuning,
     fumeTuning,
+    cieloTuning,
     cappellaTuning,
     monetBackgroundTuning,
     monetTuning,
@@ -198,6 +202,7 @@ const ThemePreviewLayer: React.FC<{
                         cadenzaTuning={cadenzaTuning}
                         partitaTuning={partitaTuning}
                         fumeTuning={fumeTuning}
+                        cieloTuning={cieloTuning}
                         cappellaTuning={cappellaTuning}
                         monetBackgroundTuning={monetBackgroundTuning}
                         monetTuning={monetTuning}
@@ -265,6 +270,7 @@ const ThemePreview: React.FC<{
     cadenzaTuning: CadenzaTuning;
     partitaTuning: PartitaTuning;
     fumeTuning: FumeTuning;
+    cieloTuning?: CieloTuning;
     cappellaTuning: CappellaTuning;
     monetBackgroundTuning: MonetBackgroundTuning;
     monetTuning: MonetTuning;
@@ -294,6 +300,7 @@ const ThemePreview: React.FC<{
     cadenzaTuning,
     partitaTuning,
     fumeTuning,
+    cieloTuning,
     cappellaTuning,
     monetBackgroundTuning,
     monetTuning,
@@ -345,6 +352,7 @@ const ThemePreview: React.FC<{
                     cadenzaTuning={cadenzaTuning}
                     partitaTuning={partitaTuning}
                     fumeTuning={fumeTuning}
+                    cieloTuning={cieloTuning}
                     cappellaTuning={cappellaTuning}
                     monetBackgroundTuning={monetBackgroundTuning}
                     monetTuning={monetTuning}
@@ -377,6 +385,7 @@ const ThemePark: React.FC<ThemeParkProps> = ({
     cadenzaTuning = DEFAULT_CADENZA_TUNING,
     partitaTuning = DEFAULT_PARTITA_TUNING,
     fumeTuning = DEFAULT_FUME_TUNING,
+    cieloTuning = DEFAULT_CIELO_TUNING,
     cappellaTuning = DEFAULT_CAPPELLA_TUNING,
     monetBackgroundTuning = DEFAULT_MONET_BACKGROUND_TUNING,
     monetTuning = DEFAULT_MONET_TUNING,
@@ -591,6 +600,7 @@ const ThemePark: React.FC<ThemeParkProps> = ({
                             cadenzaTuning={cadenzaTuning}
                             partitaTuning={partitaTuning}
                             fumeTuning={fumeTuning}
+                            cieloTuning={cieloTuning}
                             cappellaTuning={cappellaTuning}
                             monetBackgroundTuning={monetBackgroundTuning}
                             monetTuning={monetTuning}

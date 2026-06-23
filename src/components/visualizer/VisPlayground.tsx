@@ -9,6 +9,7 @@ import {
     DEFAULT_CAPPELLA_TUNING,
     DEFAULT_CLASSIC_TUNING,
     DEFAULT_FUME_TUNING,
+    DEFAULT_CIELO_TUNING,
     DEFAULT_MONET_BACKGROUND_TUNING,
     DEFAULT_MONET_TUNING,
     DEFAULT_PARTITA_TUNING,
@@ -20,6 +21,7 @@ import {
     type CadenzaTuning,
     type ClassicTuning,
     type FumeTuning,
+    type CieloTuning,
     type MonetBackgroundImage,
     type MonetBackgroundTuning,
     type MonetPortraitImage,
@@ -63,6 +65,7 @@ interface VisPlaygroundProps {
     cadenzaTuning?: CadenzaTuning;
     partitaTuning?: PartitaTuning;
     fumeTuning?: FumeTuning;
+    cieloTuning?: CieloTuning;
     cappellaTuning?: CappellaTuning;
     tiltTuning?: TiltTuning;
     monetBackgroundTuning?: MonetBackgroundTuning;
@@ -97,6 +100,8 @@ interface VisPlaygroundProps {
     onResetPartitaTuning?: () => void;
     onFumeTuningChange?: (patch: Partial<FumeTuning>) => void;
     onResetFumeTuning?: () => void;
+    onCieloTuningChange?: (patch: Partial<CieloTuning>) => void;
+    onResetCieloTuning?: () => void;
     onCappellaTuningChange?: (patch: Partial<CappellaTuning>) => void;
     onResetCappellaTuning?: () => void;
     onTiltTuningChange?: (patch: Partial<TiltTuning>) => void;
@@ -261,6 +266,7 @@ const VisPlayground: React.FC<VisPlaygroundProps> = ({
     cadenzaTuning = DEFAULT_CADENZA_TUNING,
     partitaTuning = DEFAULT_PARTITA_TUNING,
     fumeTuning = DEFAULT_FUME_TUNING,
+    cieloTuning = DEFAULT_CIELO_TUNING,
     cappellaTuning = DEFAULT_CAPPELLA_TUNING,
     tiltTuning = DEFAULT_TILT_TUNING,
     monetBackgroundTuning = DEFAULT_MONET_BACKGROUND_TUNING,
@@ -293,6 +299,8 @@ const VisPlayground: React.FC<VisPlaygroundProps> = ({
     onResetPartitaTuning,
     onFumeTuningChange,
     onResetFumeTuning,
+    onCieloTuningChange,
+    onResetCieloTuning,
     onCappellaTuningChange,
     onResetCappellaTuning,
     onTiltTuningChange,
@@ -345,6 +353,7 @@ const VisPlayground: React.FC<VisPlaygroundProps> = ({
     const [draftClassicTuning, setDraftClassicTuning] = useState<ClassicTuning>(classicTuning);
     const [draftPartitaTuning, setDraftPartitaTuning] = useState<PartitaTuning>(partitaTuning);
     const [draftFumeTuning, setDraftFumeTuning] = useState<FumeTuning>(fumeTuning);
+    const [draftCieloTuning, setDraftCieloTuning] = useState<CieloTuning>(cieloTuning);
     const [draftTiltTuning, setDraftTiltTuning] = useState<TiltTuning>(tiltTuning);
     const [draftMonetBackgroundTuning, setDraftMonetBackgroundTuning] = useState<MonetBackgroundTuning>(monetBackgroundTuning);
     const [draftMonetTuning, setDraftMonetTuning] = useState<MonetTuning>(monetTuning);
@@ -399,6 +408,12 @@ const VisPlayground: React.FC<VisPlaygroundProps> = ({
         glowIntensity: clampFumeGlowIntensity(draftFumeTuning.glowIntensity),
         heroScale: clampFumeHeroScale(draftFumeTuning.heroScale),
     }), [draftFumeTuning]);
+    const resolvedCieloTuning = useMemo<CieloTuning>(() => ({
+        cameraSpeed: Math.min(1.85, Math.max(0.55, draftCieloTuning.cameraSpeed ?? DEFAULT_CIELO_TUNING.cameraSpeed)),
+        geometricDensity: Math.min(2.0, Math.max(0.0, draftCieloTuning.geometricDensity ?? DEFAULT_CIELO_TUNING.geometricDensity)),
+        particleDensity: Math.min(2.0, Math.max(0.0, draftCieloTuning.particleDensity ?? DEFAULT_CIELO_TUNING.particleDensity)),
+        baseColorMix: Math.min(1.0, Math.max(0.0, draftCieloTuning.baseColorMix ?? DEFAULT_CIELO_TUNING.baseColorMix)),
+    }), [draftCieloTuning]);
     const currentFontLabel = customFontLabel || customFontFamily || (t('options.customFont') || '自定义字体');
     const fontStyleOptions: PresetOption<Theme['fontStyle'] | 'custom'>[] = useMemo(() => ([
         ...builtinFontOptions,
@@ -422,6 +437,7 @@ const VisPlayground: React.FC<VisPlaygroundProps> = ({
     useEffect(() => { setDraftClassicTuning(classicTuning); }, [classicTuning]);
     useEffect(() => { setDraftPartitaTuning(partitaTuning); }, [partitaTuning]);
     useEffect(() => { setDraftFumeTuning(fumeTuning); }, [fumeTuning]);
+    useEffect(() => { setDraftCieloTuning(cieloTuning); }, [cieloTuning]);
     useEffect(() => { setDraftTiltTuning(tiltTuning); }, [tiltTuning]);
     useEffect(() => { setDraftMonetBackgroundTuning(monetBackgroundTuning); }, [monetBackgroundTuning]);
     useEffect(() => { setDraftMonetTuning(monetTuning); }, [monetTuning]);
@@ -495,10 +511,12 @@ const VisPlayground: React.FC<VisPlaygroundProps> = ({
             resetClassicTuning: onResetClassicTuning,
             resetPartitaTuning: onResetPartitaTuning,
             resetFumeTuning: onResetFumeTuning,
+            resetCieloTuning: onResetCieloTuning,
             resetCappellaTuning: onResetCappellaTuning,
             resetTiltTuning: onResetTiltTuning,
             resetMonetTuning: onResetMonetTuning,
             setDraftFumeTuning,
+            setDraftCieloTuning,
         });
     };
 
@@ -660,6 +678,15 @@ const VisPlayground: React.FC<VisPlaygroundProps> = ({
             onFumeTuningChange?.(patch);
         } else {
             pendingCommitRef.current = () => onFumeTuningChange?.(patch);
+        }
+    };
+
+    const handleCieloTuningChange = (patch: Partial<CieloTuning>) => {
+        setDraftCieloTuning(previous => ({ ...previous, ...patch }));
+        if (!isDraggingSlider.current) {
+            onCieloTuningChange?.(patch);
+        } else {
+            pendingCommitRef.current = () => onCieloTuningChange?.(patch);
         }
     };
 
@@ -861,6 +888,7 @@ const VisPlayground: React.FC<VisPlaygroundProps> = ({
                                 cadenzaTuning={cadenzaTuning}
                                 partitaTuning={resolvedPartitaTuning}
                                 fumeTuning={resolvedFumeTuning}
+                                cieloTuning={resolvedCieloTuning}
                                 cappellaTuning={cappellaTuning}
                                 tiltTuning={draftTiltTuning}
                                 monetBackgroundTuning={draftMonetBackgroundTuning}
@@ -921,6 +949,8 @@ const VisPlayground: React.FC<VisPlaygroundProps> = ({
                         onPartitaTuningChange={handlePartitaTuningDraft}
                         fumeTuning={resolvedFumeTuning}
                         onFumeTuningChange={handleFumeTuningChange}
+                        cieloTuning={resolvedCieloTuning}
+                        onCieloTuningChange={handleCieloTuningChange}
                         cappellaTuning={cappellaTuning}
                         cappellaCustomEmojiImages={cappellaCustomEmojiImages}
                         onCappellaTuningChange={onCappellaTuningChange}

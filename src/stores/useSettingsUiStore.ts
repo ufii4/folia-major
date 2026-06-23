@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type React from 'react';
-import { DEFAULT_CADENZA_TUNING, DEFAULT_CAPPELLA_TUNING, DEFAULT_CLASSIC_TUNING, DEFAULT_FUME_TUNING, DEFAULT_MONET_BACKGROUND_TUNING, DEFAULT_MONET_TUNING, DEFAULT_PARTITA_TUNING, DEFAULT_TILT_TUNING, type CadenzaTuning, type CappellaAvatarImage, type CappellaAvatarSource, type CappellaEmojiImage, type CappellaTuning, type ClassicTuning, type FumeTuning, type MonetBackgroundImage, type MonetBackgroundLayout, type MonetBackgroundSource, type MonetBackgroundTuning, type MonetBackgroundWashColorMode, type MonetPortraitImage, type MonetPortraitSource, type MonetTuning, type PartitaTuning, type QueueAddBehavior, type StatusMessage, type StoredCappellaAvatarImage, type StoredCappellaEmojiImage, type StoredCustomLyricsFont, type StoredMonetBackgroundImage, type StoredMonetPortraitImage, type Theme, type TiltTuning, type UrlBackgroundItem, type VisualizerBackgroundMode, type VisualizerFrameRate, type VisualizerMode } from '../types';
+import { DEFAULT_CADENZA_TUNING, DEFAULT_CAPPELLA_TUNING, DEFAULT_CLASSIC_TUNING, DEFAULT_FUME_TUNING, DEFAULT_MONET_BACKGROUND_TUNING, DEFAULT_MONET_TUNING, DEFAULT_PARTITA_TUNING, DEFAULT_TILT_TUNING, DEFAULT_CIELO_TUNING, type CadenzaTuning, type CappellaAvatarImage, type CappellaAvatarSource, type CappellaEmojiImage, type CappellaTuning, type ClassicTuning, type FumeTuning, type MonetBackgroundImage, type MonetBackgroundLayout, type MonetBackgroundSource, type MonetBackgroundTuning, type MonetBackgroundWashColorMode, type MonetPortraitImage, type MonetPortraitSource, type MonetTuning, type PartitaTuning, type QueueAddBehavior, type StatusMessage, type StoredCappellaAvatarImage, type StoredCappellaEmojiImage, type StoredCustomLyricsFont, type StoredMonetBackgroundImage, type StoredMonetPortraitImage, type Theme, type TiltTuning, type CieloTuning, type UrlBackgroundItem, type VisualizerBackgroundMode, type VisualizerFrameRate, type VisualizerMode } from '../types';
 import { DEFAULT_VISUALIZER_MODE, getVisualizerRegistryEntry, hasVisualizerMode } from '../components/visualizer/registry';
 import { getLyricFilterError } from '../utils/lyrics/filtering';
 import { buildStoredCappellaEmojiPack, clearCustomCappellaEmojiPack, isSupportedCappellaEmojiFile, saveCustomCappellaEmojiPack } from '../services/cappellaEmojiPack';
@@ -340,6 +340,27 @@ const readStoredTiltTuning = (): TiltTuning => {
         };
     } catch {
         return DEFAULT_TILT_TUNING;
+    }
+};
+
+const readStoredCieloTuning = (): CieloTuning => {
+    if (typeof window === 'undefined') {
+        return DEFAULT_CIELO_TUNING;
+    }
+
+    const saved = localStorage.getItem('cielo_tuning');
+    if (!saved) return DEFAULT_CIELO_TUNING;
+
+    try {
+        const parsed = JSON.parse(saved) as Partial<CieloTuning>;
+        return {
+            cameraSpeed: parsed.cameraSpeed ?? DEFAULT_CIELO_TUNING.cameraSpeed,
+            geometricDensity: parsed.geometricDensity ?? DEFAULT_CIELO_TUNING.geometricDensity,
+            particleDensity: parsed.particleDensity ?? DEFAULT_CIELO_TUNING.particleDensity,
+            baseColorMix: parsed.baseColorMix ?? DEFAULT_CIELO_TUNING.baseColorMix,
+        };
+    } catch {
+        return DEFAULT_CIELO_TUNING;
     }
 };
 
@@ -711,6 +732,7 @@ type SettingsUiState = {
     fumeTuning: FumeTuning;
     cappellaTuning: CappellaTuning;
     tiltTuning: TiltTuning;
+    cieloTuning: CieloTuning;
     monetBackgroundTuning: MonetBackgroundTuning;
     monetTuning: MonetTuning;
     storedCappellaEmojiPack: StoredCappellaEmojiImage[];
@@ -805,6 +827,8 @@ type SettingsUiState = {
     handleResetCappellaTuning: () => void;
     handleSetTiltTuning: (patch: Partial<TiltTuning>) => void;
     handleResetTiltTuning: () => void;
+    handleSetCieloTuning: (patch: Partial<CieloTuning>) => void;
+    handleResetCieloTuning: () => void;
     handleSetMonetBackgroundTuning: (patch: Partial<MonetBackgroundTuning>) => void;
     handleResetMonetBackgroundTuning: () => void;
     handleSetMonetTuning: (patch: Partial<MonetTuning>) => void;
@@ -873,6 +897,7 @@ export const useSettingsUiStore = create<SettingsUiState>((set, get) => ({
     fumeTuning: readStoredFumeTuning(),
     cappellaTuning: readStoredCappellaTuning(),
     tiltTuning: readStoredTiltTuning(),
+    cieloTuning: readStoredCieloTuning(),
     monetBackgroundTuning: readStoredMonetBackgroundTuning(),
     monetTuning: readStoredMonetTuning(),
     storedCappellaEmojiPack: [],
@@ -1359,6 +1384,26 @@ export const useSettingsUiStore = create<SettingsUiState>((set, get) => ({
         }
         set({ tiltTuning: DEFAULT_TILT_TUNING });
         notify(get, { type: 'info', text: '倾诉参数已重置' });
+    },
+    handleSetCieloTuning: (patch) => {
+        const prev = get().cieloTuning;
+        const next = {
+            cameraSpeed: patch.cameraSpeed ?? prev.cameraSpeed,
+            geometricDensity: patch.geometricDensity ?? prev.geometricDensity,
+            particleDensity: patch.particleDensity ?? prev.particleDensity,
+            baseColorMix: patch.baseColorMix ?? prev.baseColorMix,
+        };
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('cielo_tuning', JSON.stringify(next));
+        }
+        set({ cieloTuning: next });
+    },
+    handleResetCieloTuning: () => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('cielo_tuning', JSON.stringify(DEFAULT_CIELO_TUNING));
+        }
+        set({ cieloTuning: DEFAULT_CIELO_TUNING });
+        notify(get, { type: 'info', text: '天际参数已重置' });
     },
     handleSetMonetBackgroundTuning: (patch) => {
         const prev = get().monetBackgroundTuning;

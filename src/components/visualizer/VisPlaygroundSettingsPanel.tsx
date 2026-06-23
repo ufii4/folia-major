@@ -7,6 +7,7 @@ import {
     type CappellaTuning,
     type ClassicTuning,
     type FumeTuning,
+    type CieloTuning,
     type MonetBackgroundImage,
     type MonetBackgroundTuning,
     type MonetPortraitImage,
@@ -87,6 +88,8 @@ interface VisPlaygroundSettingsPanelProps {
     onPartitaTuningChange?: (patch: Partial<PartitaTuning>) => void;
     fumeTuning: FumeTuning;
     onFumeTuningChange?: (patch: Partial<FumeTuning>) => void;
+    cieloTuning: CieloTuning;
+    onCieloTuningChange?: (patch: Partial<CieloTuning>) => void;
     cappellaTuning: CappellaTuning;
     cappellaCustomEmojiImages: CappellaEmojiImage[];
     onCappellaTuningChange?: (patch: Partial<CappellaTuning>) => void;
@@ -310,6 +313,8 @@ const VisPlaygroundSettingsPanel: React.FC<VisPlaygroundSettingsPanelProps> = (p
         onPartitaTuningChange,
         fumeTuning,
         onFumeTuningChange,
+        cieloTuning,
+        onCieloTuningChange,
         cappellaTuning,
         cappellaCustomEmojiImages,
         onCappellaTuningChange,
@@ -611,6 +616,8 @@ const VisPlaygroundSettingsPanel: React.FC<VisPlaygroundSettingsPanelProps> = (p
                             onPartitaTuningChange,
                             fumeTuning,
                             onFumeTuningChange,
+                            cieloTuning,
+                            onCieloTuningChange,
                             cappellaTuning,
                             cappellaCustomEmojiImages,
                             onCappellaTuningChange,

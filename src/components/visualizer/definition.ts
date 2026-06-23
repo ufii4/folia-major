@@ -16,6 +16,7 @@ import {
     type PartitaTuning,
     type Theme,
     type TiltTuning,
+    type CieloTuning,
     type UrlBackgroundItem,
     type VisualizerBackgroundMode,
     type VisualizerMode,
@@ -23,7 +24,7 @@ import {
 
 // src/components/visualizer/definition.ts
 // Shared contracts for discoverable visualizer modes.
-export type VisualizerTuningKind = 'none' | 'classic' | 'cadenza' | 'partita' | 'fume' | 'cappella' | 'tilt' | 'monet';
+export type VisualizerTuningKind = 'none' | 'classic' | 'cadenza' | 'partita' | 'fume' | 'cappella' | 'tilt' | 'monet' | 'cielo';
 
 export interface VisualizerSharedProps {
     currentTime: MotionValue<number>;
@@ -63,6 +64,7 @@ export interface VisualizerSharedProps {
     cappellaCustomEmojiImages?: CappellaEmojiImage[];
     cappellaCustomAvatarImages?: CappellaAvatarImage[];
     tiltTuning?: TiltTuning;
+    cieloTuning?: CieloTuning;
     monetBackgroundTuning?: MonetBackgroundTuning;
     monetTuning?: MonetTuning;
     monetBackgroundImage?: MonetBackgroundImage | null;
@@ -99,6 +101,8 @@ export interface VisualizerSettingsPanelProps {
     isCappellaCustomAvatarLoading?: boolean;
     tiltTuning?: TiltTuning;
     onTiltTuningChange?: (patch: Partial<TiltTuning>) => void;
+    cieloTuning?: CieloTuning;
+    onCieloTuningChange?: (patch: Partial<CieloTuning>) => void;
     monetTuning?: MonetTuning;
     onMonetTuningChange?: (patch: Partial<MonetTuning>) => void;
     monetBackgroundImage?: MonetBackgroundImage | null;
@@ -129,8 +133,10 @@ export interface VisualizerSettingsResetProps {
     resetFumeTuning?: () => void;
     resetCappellaTuning?: () => void;
     resetTiltTuning?: () => void;
+    resetCieloTuning?: () => void;
     resetMonetTuning?: () => void;
     setDraftFumeTuning?: (tuning: FumeTuning) => void;
+    setDraftCieloTuning?: (tuning: CieloTuning) => void;
 }
 
 export interface VisualizerRegistryEntry {

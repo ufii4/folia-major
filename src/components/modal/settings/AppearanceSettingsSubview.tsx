@@ -143,6 +143,19 @@ const decompressFume = (o: any): any => ({
     heroScale: o.hs !== undefined ? o.hs : 1,
 });
 
+const compressCielo = (t: any): any => ({
+    cs: t.cameraSpeed,
+    gd: t.geometricDensity,
+    pd: t.particleDensity,
+    bcm: t.baseColorMix,
+});
+const decompressCielo = (o: any): any => ({
+    cameraSpeed: o.cs !== undefined ? o.cs : 1.0,
+    geometricDensity: o.gd !== undefined ? o.gd : 1.0,
+    particleDensity: o.pd !== undefined ? o.pd : 1.0,
+    baseColorMix: o.bcm !== undefined ? o.bcm : 0.5,
+});
+
 const compressCappella = (t: any): any => ({
     sem: t.showEmoMessages,
     eps: t.emojiPackSource,
@@ -230,6 +243,7 @@ export const compressConfig = (config: any): string => {
     if (config.cadenzaTuning) minified.cat = compressCadenza(config.cadenzaTuning);
     if (config.partitaTuning) minified.pt = compressPartita(config.partitaTuning);
     if (config.fumeTuning) minified.ft = compressFume(config.fumeTuning);
+    if (config.cieloTuning) minified.ci = compressCielo(config.cieloTuning);
     if (config.cappellaTuning) minified.cpt = compressCappella(config.cappellaTuning);
     if (config.tiltTuning) minified.tt = compressTilt(config.tiltTuning);
     if (config.monetBackgroundTuning) minified.mbt = compressMonetBackground(config.monetBackgroundTuning);
@@ -284,6 +298,7 @@ export const decompressConfig = (str: string): any => {
         if (parsed.cat) decompressed.cadenzaTuning = decompressCadenza(parsed.cat);
         if (parsed.pt) decompressed.partitaTuning = decompressPartita(parsed.pt);
         if (parsed.ft) decompressed.fumeTuning = decompressFume(parsed.ft);
+        if (parsed.ci) decompressed.cieloTuning = decompressCielo(parsed.ci);
         if (parsed.cpt) decompressed.cappellaTuning = decompressCappella(parsed.cpt);
         if (parsed.tt) decompressed.tiltTuning = decompressTilt(parsed.tt);
         if (parsed.mbt) decompressed.monetBackgroundTuning = decompressMonetBackground(parsed.mbt);
@@ -296,7 +311,7 @@ export const decompressConfig = (str: string): any => {
         const validKeys = [
             'theme', 'visualizerMode', 'visualizerBackgroundMode', 'backgroundOpacity',
             'visualizerOpacity', 'lyricsFontStyle', 'lyricsFontScale', 'classicTuning',
-            'cadenzaTuning', 'partitaTuning', 'fumeTuning', 'cappellaTuning',
+            'cadenzaTuning', 'partitaTuning', 'fumeTuning', 'cieloTuning', 'cappellaTuning',
             'tiltTuning', 'monetBackgroundTuning', 'monetTuning',
             'urlBackgroundList', 'urlBackgroundSelectedId'
         ];
@@ -386,6 +401,7 @@ const AppearanceSettingsSubview: React.FC<AppearanceSettingsSubviewProps> = ({
         cadenzaTuning: state.cadenzaTuning,
         partitaTuning: state.partitaTuning,
         fumeTuning: state.fumeTuning,
+        cieloTuning: state.cieloTuning,
         cappellaTuning: state.cappellaTuning,
         tiltTuning: state.tiltTuning,
         monetBackgroundTuning: state.monetBackgroundTuning,
@@ -403,6 +419,7 @@ const AppearanceSettingsSubview: React.FC<AppearanceSettingsSubviewProps> = ({
         handleSetCadenzaTuning: state.handleSetCadenzaTuning,
         handleSetPartitaTuning: state.handleSetPartitaTuning,
         handleSetFumeTuning: state.handleSetFumeTuning,
+        handleSetCieloTuning: state.handleSetCieloTuning,
         handleSetCappellaTuning: state.handleSetCappellaTuning,
         handleSetTiltTuning: state.handleSetTiltTuning,
         handleSetMonetBackgroundTuning: state.handleSetMonetBackgroundTuning,
@@ -445,6 +462,7 @@ const AppearanceSettingsSubview: React.FC<AppearanceSettingsSubviewProps> = ({
             cadenzaTuning: store.cadenzaTuning,
             partitaTuning: store.partitaTuning,
             fumeTuning: store.fumeTuning,
+            cieloTuning: store.cieloTuning,
             cappellaTuning: store.cappellaTuning,
             tiltTuning: store.tiltTuning,
             monetBackgroundTuning: store.monetBackgroundTuning,
@@ -523,6 +541,9 @@ const AppearanceSettingsSubview: React.FC<AppearanceSettingsSubviewProps> = ({
             }
             if (config.fumeTuning) {
                 store.handleSetFumeTuning(config.fumeTuning);
+            }
+            if (config.cieloTuning) {
+                store.handleSetCieloTuning(config.cieloTuning);
             }
             if (config.cappellaTuning) {
                 store.handleSetCappellaTuning(config.cappellaTuning);

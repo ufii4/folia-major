@@ -55,7 +55,7 @@ export interface DualTheme {
 
 export type ThemeMode = 'default' | 'ai' | 'custom';
 
-export type BuiltinVisualizerMode = 'classic' | 'cadenza' | 'partita' | 'fume' | 'monet';
+export type BuiltinVisualizerMode = 'classic' | 'cadenza' | 'partita' | 'fume' | 'monet' | 'cielo';
 export type VisualizerMode = BuiltinVisualizerMode | (string & {});
 export type VisualizerFrameRate = 'off' | 120 | 90 | 60;
 
@@ -417,6 +417,20 @@ export const DEFAULT_TILT_TUNING: TiltTuning = {
   splitProbability: 0.75,
   tiltStyleProbability: 0.35,
   colorScheme: 'default',
+};
+
+export interface CieloTuning {
+  cameraSpeed: number;
+  geometricDensity: number;
+  particleDensity: number;
+  baseColorMix: number;
+}
+
+export const DEFAULT_CIELO_TUNING: CieloTuning = {
+  cameraSpeed: 1.0,
+  geometricDensity: 1.0,
+  particleDensity: 1.0,
+  baseColorMix: 0.5,
 };
 
 export type MonetBackgroundSource = 'cover-derived' | 'uploaded-global';

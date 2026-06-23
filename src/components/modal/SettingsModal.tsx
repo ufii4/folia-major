@@ -124,6 +124,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         cadenzaTuning,
         partitaTuning,
         fumeTuning,
+        cieloTuning,
         cappellaTuning,
         tiltTuning,
         monetBackgroundTuning,
@@ -2079,6 +2080,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         cadenzaTuning={cadenzaTuning}
                         partitaTuning={partitaTuning}
                         fumeTuning={fumeTuning}
+                        cieloTuning={cieloTuning}
                         cappellaTuning={cappellaTuning}
                         tiltTuning={tiltTuning}
                         monetBackgroundTuning={monetBackgroundTuning}
@@ -2111,6 +2113,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         onResetPartitaTuning={onResetPartitaTuning}
                         onFumeTuningChange={onFumeTuningChange}
                         onResetFumeTuning={onResetFumeTuning}
+                        onCieloTuningChange={onCieloTuningChange}
+                        onResetCieloTuning={onResetCieloTuning}
                         onCappellaTuningChange={onCappellaTuningChange}
                         onResetCappellaTuning={onResetCappellaTuning}
                         onTiltTuningChange={onTiltTuningChange}
@@ -2157,6 +2161,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         cadenzaTuning={cadenzaTuning}
                         partitaTuning={partitaTuning}
                         fumeTuning={fumeTuning}
+                        cieloTuning={cieloTuning}
                         cappellaTuning={cappellaTuning}
                         monetBackgroundTuning={monetBackgroundTuning}
                         monetTuning={monetTuning}

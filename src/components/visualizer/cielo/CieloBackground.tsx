@@ -173,32 +173,47 @@ const fragmentShader = `
                     vec2 localUv = cellTUv - nOffset;
                     localUv -= hash22(nId) - 0.5;
                     
+                    float entrance = clamp((u_cameraY + cssResolution.y - nId.y * gridT) / (cssResolution.y * 1.0), 0.0, 1.0);
+                    
                     // Fixed rotation (no continuous spinning)
                     float rotAngle = hash21(nId) * 6.28;
                     
                     // Pre-rotate UVs to local space of the rhombus
                     vec2 rotatedUv = localUv * rot(rotAngle);
                     
-                    // Removed local translation to lock the shapes perfectly to the scrolling world grid
+                    // Fly-in animation (local translation that settles to 0.0)
+                    float ease = 1.0 - pow(1.0 - entrance, 3.0);
+                    rotatedUv.y += mix(1.5, 0.0, ease);
+                    
+                    // Slicing animation for some rhombuses (offset halves along diagonal)
+                    float sliceOffset = 0.0;
+                    if (hash21(nId + 42.0) < 0.4) {
+                        // Slice opens up as it flies in
+                        float sliceProgress = smoothstep(0.3, 0.8, entrance);
+                        sliceOffset = sliceProgress * 0.08;
+                    }
                     
                     // Rhombus size (width, height) - make them elongated diamonds
                     vec2 rbSize = vec2(0.1 + ht * 0.05, 0.2 + ht * 0.15);
                     
-                    float d3 = sdRhombus(rotatedUv, rbSize);
+                    // Right half (moves +Y) - x>0 half plane is max(d, -x)
+                    vec2 pRight = rotatedUv;
+                    pRight.y -= sliceOffset;
+                    float dRight = max(sdRhombus(pRight, rbSize), -pRight.x);
+                    
+                    // Left half (moves -Y) - x<0 half plane is max(d, x)
+                    vec2 pLeft = rotatedUv;
+                    pLeft.y += sliceOffset;
+                    float dLeft = max(sdRhombus(pLeft, rbSize), pLeft.x);
+                    
+                    // Combine the two perfectly constructed triangles
+                    float d3 = min(dRight, dLeft);
                     
                     if (d3 < aaT) {
                         float triMask = smoothstep(aaT, -aaT, d3);
                         
                         // Pick color (White or Palette)
                         vec3 triCol = ht < 0.2 ? vec3(1.0) : getPaletteColor(ht * 17.0);
-                        
-                        // Center line slicing the diamond longitudinally (along Y axis of the rhombus)
-                        float lineDist = abs(rotatedUv.x);
-                        float lineThickness = 0.003;
-                        float centerLineMask = smoothstep(lineThickness + aaT, lineThickness - aaT, lineDist);
-                        
-                        // Mix the center line color (Black) over the rhombus color
-                        triCol = mix(triCol, vec3(0.0), centerLineMask);
                         
                         col = mix(col, triCol, triMask * 0.95);
                     }

@@ -93,20 +93,21 @@ const fragmentShader = `
         vec2 cellCId = floor(cellC);
         vec2 cellCUv = fract(cellC) - 0.5;
         
-        // Expand search radius to -2 to 2 to prevent large arcs from being clipped at cell boundaries
-        for (int y = -2; y <= 2; y++) {
-            for (int x = -2; x <= 2; x++) {
+        // Check a generous neighbor range so large circles keep a continuous contour across cell boundaries.
+        for (int y = -3; y <= 3; y++) {
+            for (int x = -3; x <= 3; x++) {
                 vec2 nOffset = vec2(float(x), float(y));
                 vec2 nId = cellCId + nOffset;
                 float hc = hash21(nId + 8.0);
                 
                 if (hc < 0.8 * u_densityGeo) {
+                    vec2 shapeOffset = hash22(nId) - 0.5;
                     vec2 localUv = cellCUv - nOffset;
-                    localUv -= hash22(nId) - 0.5;
+                    localUv -= shapeOffset;
                     
                     float entrance = clamp((u_cameraY + cssResolution.y - nId.y * gridC) / (cssResolution.y * 0.5), 0.0, 1.0);
                     
-                    // Cap radius at 1.95 to guarantee it never exceeds the -2 to 2 grid search bounds
+                    // Cap radius so the neighbor search can cover the full contour with antialiasing.
                     float radius = min(0.3 + hc * 1.5, 1.95);
                     float distCenter = length(localUv);
                     float dist = abs(distCenter - radius);
@@ -114,8 +115,8 @@ const fragmentShader = `
                     // Mix of thick and thin arcs
                     float thickness = hc < 0.3 ? 0.02 : 0.003; 
                     
-                    // Sweep
-                    float angle = atan(localUv.y, localUv.x);
+                    vec2 sweepUv = localUv - vec2(0.0, radius * 1.2);
+                    float angle = atan(sweepUv.y, sweepUv.x);
                     float sweep = smoothstep(-3.14, 3.14, angle);
                     
                     if (entrance >= 1.0 || sweep < entrance) {
@@ -124,7 +125,6 @@ const fragmentShader = `
                         // The bright solid arc stroke
                         if (dist < thickness + aaC) {
                             float mask = smoothstep(thickness + aaC, thickness - aaC, dist);
-                            // Smoothly fade the leading edge of the sweep to remove the harsh glitch cut
                             float tipMask = entrance >= 1.0 ? 1.0 : smoothstep(entrance, entrance - 0.05, sweep);
                             col = mix(col, cCol, mask * tipMask * 0.9);
                         }
@@ -171,8 +171,9 @@ const fragmentShader = `
         vec2 cellTId = floor(cellT);
         vec2 cellTUv = fract(cellT) - 0.5;
         
-        for (int y = -1; y <= 1; y++) {
-            for (int x = -1; x <= 1; x++) {
+        // Rhombuses fly in from outside their home cell, so nearby cells must also be sampled.
+        for (int y = -3; y <= 3; y++) {
+            for (int x = -3; x <= 3; x++) {
                 vec2 nOffset = vec2(float(x), float(y));
                 vec2 nId = cellTId + nOffset;
                 float ht = hash21(nId + 13.1);
@@ -229,26 +230,28 @@ const fragmentShader = `
             }
         }
 
-        // --- LAYER 4: Sweeping Adjustment Layers (Filled Circles) ---
+        // --- LAYER 4: Adjustment Layers (Filled Circles) ---
         // Re-iterate the gridC to draw the fills ON TOP of all other shapes, acting like AE Adjustment Layers
-        // Expanded to 5x5 grid search (-2 to 2) to match Layer 1 and prevent cutoff
-        for (int y = -2; y <= 2; y++) {
-            for (int x = -2; x <= 2; x++) {
+        // Match Layer 1's generous range so large filled circles never reveal a cell-boundary edge.
+        for (int y = -3; y <= 3; y++) {
+            for (int x = -3; x <= 3; x++) {
                 vec2 nOffset = vec2(float(x), float(y));
                 vec2 nId = cellCId + nOffset;
                 float hc = hash21(nId + 8.0);
                 
                 if (hc < 0.8 * u_densityGeo && hc > 0.4) {
+                    vec2 shapeOffset = hash22(nId) - 0.5;
                     vec2 localUv = cellCUv - nOffset;
-                    localUv -= hash22(nId) - 0.5;
+                    localUv -= shapeOffset;
                     
                     float entrance = clamp((u_cameraY + cssResolution.y - nId.y * gridC) / (cssResolution.y * 0.5), 0.0, 1.0);
                     
-                    // Cap radius at 1.95 to guarantee it never exceeds the -2 to 2 grid search bounds
+                    // Cap radius so the neighbor search can cover the full contour with antialiasing.
                     float radius = min(0.3 + hc * 1.5, 1.95);
                     float distCenter = length(localUv);
                     
-                    float angle = atan(localUv.y, localUv.x);
+                    vec2 sweepUv = localUv - vec2(0.0, radius * 1.2);
+                    float angle = atan(sweepUv.y, sweepUv.x);
                     float sweep = smoothstep(-3.14, 3.14, angle);
                     
                     if ((entrance >= 1.0 || sweep < entrance) && distCenter < radius + aaC) {
@@ -287,18 +290,6 @@ const fragmentShader = `
         gl_FragColor = vec4(col, 1.0);
     }
 `;
-
-// Simple hex to RGB parser since we are omitting full colorMix for brevity
-const parseHex = (hex: string) => {
-    let raw = hex.trim();
-    if (raw.startsWith('#')) raw = raw.slice(1);
-    if (raw.length === 3) raw = raw.split('').map(c => c + c).join('');
-    if (raw.length !== 6 && raw.length !== 8) return [0, 0, 0];
-    const r = parseInt(raw.slice(0, 2), 16) / 255;
-    const g = parseInt(raw.slice(2, 4), 16) / 255;
-    const b = parseInt(raw.slice(4, 6), 16) / 255;
-    return [r, g, b];
-};
 
 export const CieloBackground: React.FC<CieloBackgroundProps> = ({
     currentTime,

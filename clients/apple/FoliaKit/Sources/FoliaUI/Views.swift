@@ -8,14 +8,19 @@ import AVKit
 
 public struct RootView: View {
     @StateObject private var store: PlayerStore
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showSettings = false
 
     public init(store: PlayerStore? = nil) {
         _store = StateObject(wrappedValue: store ?? PlayerStore())
     }
 
+    private var theme: FoliaTheme { .system(colorScheme) }
+    private var isDark: Bool { colorScheme == .dark }
+
     public var body: some View {
         content
+            .tint(theme.accent)
             .sheet(isPresented: $showSettings) {
                 SettingsView(store: store)
                     #if os(macOS)
@@ -23,34 +28,44 @@ public struct RootView: View {
                     #endif
             }
             .onAppear {
-                // First run with no saved server → straight to setup.
                 if case .failed = store.connection { showSettings = true }
             }
+    }
+
+    /// The stage: fluid themed background, Monet lyric rail, floating glass
+    /// pill — Folia's player view composition (AppShell + VisualizerShell).
+    private var stage: some View {
+        ZStack {
+            FluidBackground(theme: theme)
+            VStack(spacing: 0) {
+                ConnectionBanner(store: store, theme: theme) { showSettings = true }
+                LyricsView(store: store, theme: theme)
+            }
+            VStack {
+                Spacer()
+                FloatingControls(store: store, theme: theme, isDark: isDark) {
+                    showSettings = true
+                }
+                .padding(.bottom, 12)
+            }
+        }
     }
 
     @ViewBuilder private var content: some View {
         #if os(macOS)
         NavigationSplitView {
-            SearchView(store: store)
+            SearchView(store: store, theme: theme)
                 .navigationSplitViewColumnWidth(min: 280, ideal: 340)
         } detail: {
-            VStack(spacing: 0) {
-                ConnectionBanner(store: store) { showSettings = true }
-                LyricsView(store: store)
-                Divider()
-                NowPlayingBar(store: store) { showSettings = true }
-            }
+            stage
         }
         .frame(minWidth: 900, minHeight: 600)
+        .background(theme.background)
         #else
         TabView {
-            VStack(spacing: 0) {
-                ConnectionBanner(store: store) { showSettings = true }
-                LyricsView(store: store)
-                NowPlayingBar(store: store) { showSettings = true }
-            }
-            .tabItem { Label("Now Playing", systemImage: "music.note") }
-            SearchView(store: store)
+            stage
+                .tabItem { Label("Now Playing", systemImage: "music.note") }
+            SearchView(store: store, theme: theme)
                 .tabItem { Label("Search", systemImage: "magnifyingglass") }
         }
         #endif
@@ -61,6 +76,7 @@ public struct RootView: View {
 
 struct ConnectionBanner: View {
     @ObservedObject var store: PlayerStore
+    let theme: FoliaTheme
     let openSettings: () -> Void
 
     var body: some View {
@@ -69,7 +85,7 @@ struct ConnectionBanner: View {
             EmptyView()
         case .connecting:
             banner("Connecting to \(store.config.serverURL.host ?? "server")…",
-                   color: .secondary, icon: "antenna.radiowaves.left.and.right")
+                   color: theme.secondary, icon: "antenna.radiowaves.left.and.right")
         case .failed(let reason):
             banner(reason, color: .orange, icon: "exclamationmark.triangle.fill")
         }
@@ -86,7 +102,7 @@ struct ConnectionBanner: View {
             .font(.caption)
             .foregroundStyle(color)
             .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(.quaternary.opacity(0.5))
+            .background(.white.opacity(0.06))
         }
         .buttonStyle(.plain)
     }
@@ -96,6 +112,7 @@ struct ConnectionBanner: View {
 
 struct SearchView: View {
     @ObservedObject var store: PlayerStore
+    let theme: FoliaTheme
     @State private var query = ""
 
     var body: some View {
@@ -111,94 +128,26 @@ struct SearchView: View {
                     HStack {
                         ArtworkView(url: track.artUrl, size: 40)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(track.name).lineLimit(1)
+                            Text(track.name)
+                                .foregroundStyle(theme.primary).lineLimit(1)
                             Text(track.artist).font(.caption)
-                                .foregroundStyle(.secondary).lineLimit(1)
+                                .foregroundStyle(theme.secondary).lineLimit(1)
                         }
                         Spacer()
                         if store.currentTrack?.id == track.id {
                             Image(systemName: "speaker.wave.2.fill")
-                                .foregroundStyle(.tint)
+                                .foregroundStyle(theme.accent)
                         }
                     }
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .listRowBackground(Color.clear)
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
         }
-    }
-}
-
-// MARK: - Now playing bar
-
-struct NowPlayingBar: View {
-    @ObservedObject var store: PlayerStore
-    let openSettings: () -> Void
-    @State private var scrubbing = false
-    @State private var scrubPos: Double = 0
-
-    var body: some View {
-        VStack(spacing: 6) {
-            TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
-                let duration = Double(store.currentTrack?.dt ?? 0) / 1000
-                let pos = scrubbing ? scrubPos : min(store.displayedPosition(now: ctx.date), max(duration, 0.1))
-                VStack(spacing: 2) {
-                    Slider(
-                        value: Binding(
-                            get: { pos },
-                            set: { scrubPos = $0 }
-                        ),
-                        in: 0...max(duration, 0.1)
-                    ) { editing in
-                        if editing { scrubPos = pos }
-                        scrubbing = editing
-                        if !editing { store.seek(to: scrubPos) }
-                    }
-                    HStack {
-                        Text(timeString(pos))
-                        Spacer()
-                        Text(timeString(duration))
-                    }
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                }
-            }
-
-            HStack(spacing: 14) {
-                ArtworkView(url: store.currentTrack?.artUrl, size: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(store.currentTrack?.name ?? "Nothing playing").lineLimit(1)
-                    Text(store.currentTrack?.artist ?? "").font(.caption)
-                        .foregroundStyle(.secondary).lineLimit(1)
-                }
-                Spacer()
-
-                Button { store.prev() } label: { Image(systemName: "backward.fill") }
-                Button { store.playPause() } label: {
-                    Image(systemName: store.state.playing ? "pause.fill" : "play.fill")
-                        .font(.title2)
-                }
-                Button { store.next() } label: { Image(systemName: "forward.fill") }
-
-                DevicesMenu(store: store)
-                #if os(iOS)
-                RoutePickerView()
-                    .frame(width: 26, height: 26)
-                #endif
-                Button(action: openSettings) {
-                    Image(systemName: "gearshape")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(12)
-    }
-
-    private func timeString(_ t: Double) -> String {
-        let s = Int(t.rounded())
-        return String(format: "%d:%02d", s / 60, s % 60)
+        .background(theme.background)
     }
 }
 
@@ -237,8 +186,7 @@ struct DevicesMenu: View {
             }
             #endif
         } label: {
-            Image(systemName: store.isOwner
-                ? "hifispeaker.fill" : "hifispeaker")
+            Image(systemName: store.isOwner ? "hifispeaker.fill" : "hifispeaker")
         }
         #if os(macOS)
         .onAppear { outputs = AudioOutputs.list() }

@@ -49,3 +49,4 @@ clients/apple/FoliaKit/.build/
 clients/apple/App/build/
 clients/apple/App/Folia.xcodeproj/
 clients/apple/**/*.xcuserstate
+clients/apple/FoliaKit/.swiftpm/

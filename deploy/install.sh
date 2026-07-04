@@ -11,6 +11,11 @@ mkdir -p "$HOME/Library/LaunchAgents"
 cp "$PLIST_SRC" "$PLIST_DST"
 
 launchctl bootout "gui/$UID_NUM/$LABEL" 2>/dev/null || true
+# bootout is async; bootstrapping while the old job is still draining fails
+for _ in $(seq 1 20); do
+  launchctl print "gui/$UID_NUM/$LABEL" >/dev/null 2>&1 || break
+  sleep 0.5
+done
 launchctl bootstrap "gui/$UID_NUM" "$PLIST_DST"
 
 echo "installed. status:"

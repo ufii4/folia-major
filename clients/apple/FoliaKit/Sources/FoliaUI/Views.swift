@@ -1,41 +1,94 @@
 import FoliaKit
 import SwiftUI
+#if os(iOS)
+import AVKit
+#endif
 
 // MARK: - Root
 
 public struct RootView: View {
     @StateObject private var store: PlayerStore
+    @State private var showSettings = false
 
     public init(store: PlayerStore? = nil) {
         _store = StateObject(wrappedValue: store ?? PlayerStore())
     }
 
     public var body: some View {
+        content
+            .sheet(isPresented: $showSettings) {
+                SettingsView(store: store)
+                    #if os(macOS)
+                    .frame(width: 460, height: 420)
+                    #endif
+            }
+            .onAppear {
+                // First run with no saved server → straight to setup.
+                if case .failed = store.connection { showSettings = true }
+            }
+    }
+
+    @ViewBuilder private var content: some View {
         #if os(macOS)
         NavigationSplitView {
             SearchView(store: store)
                 .navigationSplitViewColumnWidth(min: 280, ideal: 340)
         } detail: {
             VStack(spacing: 0) {
+                ConnectionBanner(store: store) { showSettings = true }
                 LyricsView(store: store)
                 Divider()
-                NowPlayingBar(store: store)
+                NowPlayingBar(store: store) { showSettings = true }
             }
         }
         .frame(minWidth: 900, minHeight: 600)
         #else
         TabView {
             VStack(spacing: 0) {
+                ConnectionBanner(store: store) { showSettings = true }
                 LyricsView(store: store)
-                NowPlayingBar(store: store)
+                NowPlayingBar(store: store) { showSettings = true }
             }
             .tabItem { Label("Now Playing", systemImage: "music.note") }
             SearchView(store: store)
                 .tabItem { Label("Search", systemImage: "magnifyingglass") }
-            SettingsView()
-                .tabItem { Label("Settings", systemImage: "gear") }
         }
         #endif
+    }
+}
+
+// MARK: - Connection banner
+
+struct ConnectionBanner: View {
+    @ObservedObject var store: PlayerStore
+    let openSettings: () -> Void
+
+    var body: some View {
+        switch store.connection {
+        case .connected:
+            EmptyView()
+        case .connecting:
+            banner("Connecting to \(store.config.serverURL.host ?? "server")…",
+                   color: .secondary, icon: "antenna.radiowaves.left.and.right")
+        case .failed(let reason):
+            banner(reason, color: .orange, icon: "exclamationmark.triangle.fill")
+        }
+    }
+
+    private func banner(_ text: String, color: Color, icon: String) -> some View {
+        Button(action: openSettings) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                Text(text).lineLimit(2).multilineTextAlignment(.leading)
+                Spacer()
+                Text("Fix").bold()
+            }
+            .font(.caption)
+            .foregroundStyle(color)
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(.quaternary.opacity(0.5))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -47,16 +100,10 @@ struct SearchView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                TextField("Search NetEase…", text: $query)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { store.search(query) }
-                if !store.connected {
-                    Image(systemName: "wifi.slash").foregroundStyle(.red)
-                        .help("Not connected to folia-server")
-                }
-            }
-            .padding(10)
+            TextField("Search NetEase…", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { store.search(query) }
+                .padding(10)
             List(Array(store.searchResults.enumerated()), id: \.element.id) { index, track in
                 Button {
                     store.playNow(store.searchResults, index: index)
@@ -87,6 +134,7 @@ struct SearchView: View {
 
 struct NowPlayingBar: View {
     @ObservedObject var store: PlayerStore
+    let openSettings: () -> Void
     @State private var scrubbing = false
     @State private var scrubPos: Double = 0
 
@@ -134,6 +182,14 @@ struct NowPlayingBar: View {
                 Button { store.next() } label: { Image(systemName: "forward.fill") }
 
                 DevicesMenu(store: store)
+                #if os(iOS)
+                RoutePickerView()
+                    .frame(width: 26, height: 26)
+                #endif
+                Button(action: openSettings) {
+                    Image(systemName: "gearshape")
+                        .foregroundStyle(.secondary)
+                }
             }
             .buttonStyle(.plain)
         }
@@ -190,33 +246,151 @@ struct DevicesMenu: View {
     }
 }
 
+#if os(iOS)
+struct RoutePickerView: UIViewRepresentable {
+    func makeUIView(context: Context) -> AVRoutePickerView {
+        let v = AVRoutePickerView()
+        v.prioritizesVideoDevices = false
+        return v
+    }
+    func updateUIView(_ view: AVRoutePickerView, context: Context) {}
+}
+#endif
+
 // MARK: - Settings
 
 public struct SettingsView: View {
-    @AppStorage("folia.serverURL") private var serverURL = ""
-    @AppStorage("folia.token") private var token = ""
-    @AppStorage("folia.deviceName") private var deviceName = ""
+    @ObservedObject var store: PlayerStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var urlString: String
+    @State private var token: String
+    @State private var deviceName: String
+    @State private var showScanner = false
 
-    public init() {}
+    public init(store: PlayerStore) {
+        self.store = store
+        _urlString = State(initialValue: store.config.serverURL.absoluteString)
+        _token = State(initialValue: store.config.token ?? "")
+        _deviceName = State(initialValue: store.config.deviceName)
+    }
 
     public var body: some View {
-        Form {
-            Section("folia-server") {
-                TextField("Server URL (http://host:3766)", text: $serverURL)
-                    .autocorrectionDisabled()
-                SecureField("Token", text: $token)
-                TextField("Device name", text: $deviceName)
+        NavigationStack {
+            Form {
+                Section {
+                    statusRow
+                }
+                Section("folia-server") {
+                    TextField("Server URL", text: $urlString)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                    TextField("Token", text: $token)
+                        .autocorrectionDisabled()
+                        .font(.callout.monospaced())
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                    TextField("Device name", text: $deviceName)
+                }
+                Section {
+                    Button { applyAndConnect() } label: {
+                        Label("Connect", systemImage: "bolt.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    #if os(iOS)
+                    if SetupScannerView.isSupported {
+                        Button { showScanner = true } label: {
+                            Label("Scan Setup Code", systemImage: "qrcode.viewfinder")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    #endif
+                } footer: {
+                    Text("On the Mac running folia-server, open localhost:3766/pair and scan the code.")
+                }
             }
-            Section {
-                Text("Changes apply on next launch.")
-                    .font(.caption).foregroundStyle(.secondary)
+            .navigationTitle("Settings")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showScanner) {
+                scannerSheet
+            }
+            #else
+            .formStyle(.grouped)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            #endif
+        }
+    }
+
+    @ViewBuilder private var statusRow: some View {
+        HStack(spacing: 10) {
+            switch store.connection {
+            case .connecting:
+                ProgressView().controlSize(.small)
+                Text("Connecting…").foregroundStyle(.secondary)
+            case .connected:
+                Circle().fill(.green).frame(width: 9, height: 9)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Connected")
+                    if let nick = store.serverNickname {
+                        Text("NetEase: \(nick)").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            case .failed(let reason):
+                Circle().fill(.orange).frame(width: 9, height: 9)
+                Text(reason).font(.callout).foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+    }
+
+    private func applyAndConnect() {
+        guard let url = URL(string: urlString.trimmingCharacters(in: .whitespaces)),
+              url.scheme != nil else { return }
+        var config = store.config
+        config.serverURL = url
+        config.token = token.trimmingCharacters(in: .whitespaces).isEmpty
+            ? nil : token.trimmingCharacters(in: .whitespaces)
+        config.deviceName = deviceName.isEmpty ? config.deviceName : deviceName
+        store.reconfigure(config)
+    }
+
+    #if os(iOS)
+    @ViewBuilder private var scannerSheet: some View {
+        NavigationStack {
+            SetupScannerView { payload in
+                showScanner = false
+                if let parsed = SetupCode.parse(payload) {
+                    urlString = parsed.url.absoluteString
+                    token = parsed.token
+                    applyAndConnect()
+                }
+            }
+            .ignoresSafeArea()
+            .navigationTitle("Scan Setup Code")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showScanner = false }
+                }
             }
         }
-        #if os(macOS)
-        .formStyle(.grouped)
-        .padding()
-        #endif
     }
+    #endif
 }
 
 // MARK: - Artwork

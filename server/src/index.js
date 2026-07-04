@@ -35,6 +35,30 @@ app.get('/health', (_req, res) =>
   res.json({ ok: true, loggedIn: jar.isLoggedIn() }),
 )
 
+// One-glance client onboarding: open http://localhost:3766/pair on the Mac,
+// scan with the iOS app. Loopback-only — the QR embeds the token.
+app.get('/pair', async (req, res) => {
+  if (!LOOPBACK.has(req.socket.remoteAddress)) {
+    return res.status(403).send('pairing page is loopback-only')
+  }
+  const os = require('os')
+  const host = os.hostname().replace(/\.local$/, '')
+  const setupURL =
+    `folia://setup?url=${encodeURIComponent(`http://${host}.local:${config.port}`)}` +
+    `&token=${config.token}`
+  const qrcode = require('qrcode')
+  const img = await qrcode.toDataURL(setupURL, { width: 380, margin: 2 })
+  res.send(`<!doctype html><meta charset="utf-8">
+<title>Pair a Folia client</title>
+<body style="font-family:-apple-system,sans-serif;display:flex;flex-direction:column;
+align-items:center;justify-content:center;min-height:90vh;background:#0f1420;color:#e8ecf4">
+<h2 style="font-weight:600">Pair a Folia client</h2>
+<img src="${img}" style="border-radius:12px">
+<p style="color:#93a0b4">Open Folia on the phone → Settings → Scan Setup Code</p>
+<p style="color:#93a0b4;font-size:12px">server: http://${host}.local:${config.port}</p>
+</body>`)
+})
+
 app.use((req, res, next) => {
   if (!authorized(req)) return res.status(401).json({ error: 'bad token' })
   next()

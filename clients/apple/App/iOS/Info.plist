@@ -23,6 +23,8 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Scan the pairing code shown by folia-server to connect.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

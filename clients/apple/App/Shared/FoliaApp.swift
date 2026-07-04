@@ -7,10 +7,5 @@ struct FoliaApp: App {
         WindowGroup {
             RootView()
         }
-        #if os(macOS)
-        Settings {
-            SettingsView().frame(width: 420)
-        }
-        #endif
     }
 }

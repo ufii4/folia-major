@@ -112,6 +112,7 @@ public final class PlayerStore: ObservableObject {
                 serverNickname = info.nickname
             }
         }
+        loadLibrary()
     }
 
     /// A dropped socket alone says nothing useful. Probe /health to tell
@@ -212,9 +213,32 @@ public final class PlayerStore: ObservableObject {
         lyrics = nil
         Task {
             guard let payload = try? await api.lyrics(id: track.id),
-                  let lrc = payload.lrc, !lrc.isEmpty,
                   lyricsTrackId == track.id else { return }
-            lyrics = LyricDoc.parse(lrc: lrc, translation: payload.translation)
+            lyrics = LyricDoc.best(yrc: payload.yrc, lrc: payload.lrc,
+                                   translation: payload.translation)
+        }
+    }
+
+    // MARK: - Home library (folia home: playlists carousel, radio)
+
+    @Published public private(set) var playlists: [FoliaAPI.Playlist] = []
+
+    public func loadLibrary() {
+        Task {
+            playlists = (try? await api.userPlaylists()) ?? []
+        }
+    }
+
+    public func tracks(of playlist: FoliaAPI.Playlist) async -> [Track] {
+        (try? await api.playlistTracks(id: playlist.id)) ?? []
+    }
+
+    /// Folia's Radio tab: personal FM queue.
+    public func playFM() {
+        Task {
+            let tracks = (try? await api.personalFM()) ?? []
+            guard !tracks.isEmpty else { return }
+            playNow(tracks, index: 0)
         }
     }
 

@@ -5,11 +5,18 @@ import AVKit
 #endif
 
 // MARK: - Root
+// Folia's real IA (useAppNavigation.ts: ViewState = 'home' | 'player'):
+// exactly two views over an always-rendered stage. No tab bar; search is an
+// overlay; home floats on the visualizer background.
 
 public struct RootView: View {
     @StateObject private var store: PlayerStore
     @Environment(\.colorScheme) private var colorScheme
     @State private var showSettings = false
+    @State private var view: AppView = .home
+    @State private var autoEntered = false
+
+    enum AppView { case home, player }
 
     public init(store: PlayerStore? = nil) {
         _store = StateObject(wrappedValue: store ?? PlayerStore())
@@ -19,56 +26,64 @@ public struct RootView: View {
     private var isDark: Bool { colorScheme == .dark }
 
     public var body: some View {
-        content
-            .tint(theme.accent)
-            .sheet(isPresented: $showSettings) {
-                SettingsView(store: store)
-                    #if os(macOS)
-                    .frame(width: 460, height: 420)
-                    #endif
-            }
-            .onAppear {
-                if case .failed = store.connection { showSettings = true }
-            }
-    }
-
-    /// The stage: fluid themed background, Monet lyric rail, floating glass
-    /// pill — Folia's player view composition (AppShell + VisualizerShell).
-    private var stage: some View {
         ZStack {
             FluidBackground(theme: theme)
+
+            Group {
+                switch view {
+                case .home:
+                    HomeView(store: store, theme: theme, isDark: isDark,
+                             openSettings: { showSettings = true },
+                             enterPlayer: { withAnimation(.easeInOut(duration: 0.35)) { view = .player } })
+                case .player:
+                    ClassicStage(store: store, theme: theme)
+                        .overlay(alignment: .topLeading) { backButton }
+                }
+            }
+            .transition(.opacity)
+
             VStack(spacing: 0) {
                 ConnectionBanner(store: store, theme: theme) { showSettings = true }
-                LyricsView(store: store, theme: theme)
-            }
-            VStack {
                 Spacer()
                 FloatingControls(store: store, theme: theme, isDark: isDark) {
                     showSettings = true
                 }
-                .padding(.bottom, 12)
+                .padding(.bottom, 16)
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 900, minHeight: 600)
+        #endif
+        .tint(theme.accent)
+        .sheet(isPresented: $showSettings) {
+            SettingsView(store: store)
+                #if os(macOS)
+                .frame(width: 460, height: 420)
+                #endif
+        }
+        .onAppear {
+            if case .failed = store.connection { showSettings = true }
+        }
+        // Joining while something plays anywhere → land on the lyrics stage.
+        .onReceive(store.$state) { state in
+            if !autoEntered, state.current != nil {
+                autoEntered = true
+                view = .player
             }
         }
     }
 
-    @ViewBuilder private var content: some View {
-        #if os(macOS)
-        NavigationSplitView {
-            SearchView(store: store, theme: theme)
-                .navigationSplitViewColumnWidth(min: 280, ideal: 340)
-        } detail: {
-            stage
+    private var backButton: some View {
+        Button { withAnimation(.easeInOut(duration: 0.35)) { view = .home } } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(theme.primary)
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(.white.opacity(isDark ? 0.08 : 0.4)))
         }
-        .frame(minWidth: 900, minHeight: 600)
-        .background(theme.background)
-        #else
-        TabView {
-            stage
-                .tabItem { Label("Now Playing", systemImage: "music.note") }
-            SearchView(store: store, theme: theme)
-                .tabItem { Label("Search", systemImage: "magnifyingglass") }
-        }
-        #endif
+        .buttonStyle(.plain)
+        .padding(.leading, 16)
+        .padding(.top, 14)
     }
 }
 
@@ -105,49 +120,6 @@ struct ConnectionBanner: View {
             .background(.white.opacity(0.06))
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Search
-
-struct SearchView: View {
-    @ObservedObject var store: PlayerStore
-    let theme: FoliaTheme
-    @State private var query = ""
-
-    var body: some View {
-        VStack(spacing: 0) {
-            TextField("Search NetEase…", text: $query)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit { store.search(query) }
-                .padding(10)
-            List(Array(store.searchResults.enumerated()), id: \.element.id) { index, track in
-                Button {
-                    store.playNow(store.searchResults, index: index)
-                } label: {
-                    HStack {
-                        ArtworkView(url: track.artUrl, size: 40)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(track.name)
-                                .foregroundStyle(theme.primary).lineLimit(1)
-                            Text(track.artist).font(.caption)
-                                .foregroundStyle(theme.secondary).lineLimit(1)
-                        }
-                        Spacer()
-                        if store.currentTrack?.id == track.id {
-                            Image(systemName: "speaker.wave.2.fill")
-                                .foregroundStyle(theme.accent)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(Color.clear)
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-        }
-        .background(theme.background)
     }
 }
 

@@ -64,12 +64,16 @@ Task {
         }
         check("ws sync on hello", true)
 
+        // A real device may already own playback (live system, not a lab):
+        // claim ownership explicitly — transfer is the sanctioned path.
         await macHub.send(.setQueue([beyond], index: 0, play: true))
-        guard case .state(let st, _) = await nextMessage(&macEvents) else {
-            check("ws state after setQueue", false); throw ExitNow()
+        await macHub.send(.transfer(to: "check-mac"))
+        var owned = false
+        for _ in 0..<4 {
+            if case .state(let st, _) = await nextMessage(&macEvents),
+               st.ownerId == "check-mac", st.playing { owned = true; break }
         }
-        check("ws state after setQueue", st.ownerId == "check-mac" && st.playing,
-              "owner=\(st.ownerId ?? "-")")
+        check("ws state after setQueue+transfer", owned)
 
         let phoneHub = HubClient(
             serverURL: serverURL, token: nil,

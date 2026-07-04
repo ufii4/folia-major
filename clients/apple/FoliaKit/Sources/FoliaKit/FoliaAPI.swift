@@ -67,12 +67,14 @@ public struct FoliaAPI: Sendable {
     public struct SessionInfo: Sendable {
         public let loggedIn: Bool
         public let nickname: String?
+        public let userId: Int?
     }
 
     public func sessionInfo() async throws -> SessionInfo {
         let obj = try json(try await get("session", cacheBust: false))
         return SessionInfo(loggedIn: obj["loggedIn"] as? Bool ?? false,
-                           nickname: obj["nickname"] as? String)
+                           nickname: obj["nickname"] as? String,
+                           userId: obj["userId"] as? Int)
     }
 
     public func search(_ keywords: String, limit: Int = 30) async throws -> [Track] {
@@ -108,17 +110,75 @@ public struct FoliaAPI: Sendable {
         return URL(string: Self.https(url))
     }
 
-    /// Raw LRC text (original + translation if present).
+    /// Lyric sources, richest first: yrc (word-level karaoke), lrc, translation.
     public struct LyricPayload: Sendable {
+        public let yrc: String?
         public let lrc: String?
         public let translation: String?
     }
 
     public func lyrics(id: Int) async throws -> LyricPayload {
-        let obj = try json(try await get("api/lyric", ["id": String(id)]))
-        let lrc = (obj["lrc"] as? [String: Any])?["lyric"] as? String
-        let tl = (obj["tlyric"] as? [String: Any])?["lyric"] as? String
-        return LyricPayload(lrc: lrc, translation: tl)
+        let obj = try json(try await get("api/lyric/new", ["id": String(id)]))
+        func lyric(_ key: String) -> String? {
+            ((obj[key] as? [String: Any])?["lyric"] as? String).flatMap {
+                $0.isEmpty ? nil : $0
+            }
+        }
+        return LyricPayload(yrc: lyric("yrc"), lrc: lyric("lrc"),
+                            translation: lyric("tlyric"))
+    }
+
+    // MARK: - Library (home view; server session provides the account)
+
+    public struct Playlist: Identifiable, Sendable, Equatable {
+        public let id: Int
+        public let name: String
+        public let coverUrl: String?
+        public let trackCount: Int
+    }
+
+    public func userPlaylists() async throws -> [Playlist] {
+        guard let session = try? await sessionInfo(), session.loggedIn,
+              let uid = session.userId else { return [] }
+        let obj = try json(try await get("api/user/playlist", ["uid": String(uid)]))
+        guard let arr = obj["playlist"] as? [[String: Any]] else { return [] }
+        return arr.compactMap { p in
+            guard let id = p["id"] as? Int, let name = p["name"] as? String else { return nil }
+            return Playlist(
+                id: id, name: name,
+                coverUrl: (p["coverImgUrl"] as? String).map(Self.https),
+                trackCount: p["trackCount"] as? Int ?? 0
+            )
+        }
+    }
+
+    public func playlistTracks(id: Int, limit: Int = 500) async throws -> [Track] {
+        let obj = try json(try await get("api/playlist/track/all", [
+            "id": String(id), "limit": String(limit),
+        ]))
+        guard let songs = obj["songs"] as? [[String: Any]] else { return [] }
+        return songs.compactMap(Self.trackFromSong)
+    }
+
+    /// Personal FM — folia's Radio tab.
+    public func personalFM() async throws -> [Track] {
+        let obj = try json(try await get("api/personal_fm"))
+        guard let data = obj["data"] as? [[String: Any]] else { return [] }
+        return data.compactMap(Self.trackFromSong)
+    }
+
+    static func trackFromSong(_ s: [String: Any]) -> Track? {
+        guard let id = s["id"] as? Int, let name = s["name"] as? String else { return nil }
+        // playlist/detail uses ar/al; personal_fm uses artists/album
+        let ar = (s["ar"] as? [[String: Any]]) ?? (s["artists"] as? [[String: Any]]) ?? []
+        let al = (s["al"] as? [String: Any]) ?? (s["album"] as? [String: Any])
+        return Track(
+            id: id, name: name,
+            artist: ar.compactMap { $0["name"] as? String }.joined(separator: " / "),
+            album: al?["name"] as? String,
+            artUrl: (al?["picUrl"] as? String).map(Self.https),
+            dt: (s["dt"] as? Int) ?? (s["duration"] as? Int)
+        )
     }
 
     /// NetEase CDN hosts support TLS; upgrade so ATS stays happy.

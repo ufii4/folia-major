@@ -34,12 +34,24 @@ set -euo pipefail
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 cd "$APPDIR"
 xcodegen generate
+# Build for a GENERIC iOS destination: the phone need not be reachable during
+# the build (it's flaky over LAN). Signing still happens. devicectl then does
+# the install/launch, waiting for the device to appear.
 xcodebuild -project Folia.xcodeproj -scheme Folia-iOS -configuration Debug \\
-  -destination 'platform=iOS,id=$XCODE_DEST_ID' \\
+  -destination 'generic/platform=iOS' \\
   -derivedDataPath build/device \\
   -allowProvisioningUpdates -allowProvisioningDeviceRegistration \\
   build
 APP="build/device/Build/Products/Debug-iphoneos/Folia.app"
+
+# Wait up to 2 min for the device to be reachable, then install + launch.
+for i in \$(seq 1 60); do
+  if xcrun devicectl list devices 2>/dev/null | grep -q "$COREDEVICE_ID.*available"; then
+    break
+  fi
+  [ "\$i" = 60 ] && { echo "device $DEVICE_NAME never came online — unlock it, keep it on the same Wi-Fi"; exit 3; }
+  sleep 2
+done
 xcrun devicectl device install app --device $COREDEVICE_ID "\$APP"
 xcrun devicectl device process launch --device $COREDEVICE_ID com.ufii4.folia-ios
 EOF

@@ -26,10 +26,16 @@ Three deliberate choices:
    shifting crypto/endpoints upstream; reimplementing it in Rust/Swift forks us
    off that maintenance stream. Update with:
    `git subtree pull --prefix server/api-enhanced https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced main --squash`
-   The single local divergence: `server/api-enhanced/server.js` additionally
-   exports `constructServer` (so we can mount the express app in-process
-   instead of running a second HTTP server). Re-apply if a subtree pull
-   conflicts; better, PR it upstream.
+   Two local divergences, both in `server/api-enhanced/server.js` and both
+   upstream-PR-worthy — re-apply if a subtree pull conflicts:
+   - exports `constructServer` (so we mount the express app in-process
+     instead of running a second HTTP server)
+   - grey-track unblock gate checks `req.path` instead of `req.baseUrl`
+     (baseUrl is the mount point — empty standalone, `/api` embedded — so the
+     upstream check never matches). Unblock itself is opt-in via
+     `ENABLE_GENERAL_UNBLOCK=true`, set in the launchd plist. Note: from a
+     non-CN IP the mirror sources are often geo-gated too; expect occasional
+     rescues, not guarantees.
 2. **Login state is server-held.** Middleware injects the stored cookie jar
    into every `/api` call and absorbs `Set-Cookie` from login responses.
    NetEase credentials never reach a client — clients authenticate to us with

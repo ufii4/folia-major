@@ -11,6 +11,11 @@
     </array>
     <key>WorkingDirectory</key>
     <string>/Users/ufi/dev/folia-major/server</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>ENABLE_GENERAL_UNBLOCK</key>
+        <string>true</string>
+    </dict>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>

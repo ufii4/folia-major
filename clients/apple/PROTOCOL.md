@@ -19,6 +19,11 @@ has the current track + position for its lyrics view.
 - **Audio**: `GET /api/song/url/v1?id=<id>&level=lossless&timestamp=<now>`
   → time-limited CDN URL. Stream it directly with AVPlayer; do not proxy
   audio through the server. Refetch on 403/expiry or before natural track end.
+  Pass `randomCNIP=true` — much of the catalog is IP-gated to mainland CN.
+- **Unavailable tracks**: treat BOTH `200` with `data[0].url == null` AND
+  `404` with `data == null` as "no playable URL" (the latter occurs when the
+  server's grey-track unblock fallback finds nothing). Skip forward with a
+  UI hint; do not error.
 
 ## WebSocket `/ws?token=`
 

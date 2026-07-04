@@ -1,0 +1,57 @@
+name: Folia
+options:
+  bundleIdPrefix: com.ufii4
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "14.0"
+    iOS: "17.0"
+packages:
+  FoliaKit:
+    path: ../FoliaKit
+targets:
+  Folia-macOS:
+    type: application
+    platform: macOS
+    sources: [Shared]
+    dependencies:
+      - package: FoliaKit
+        products: [FoliaKit, FoliaUI]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ufii4.folia
+        PRODUCT_NAME: Folia
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        SWIFT_VERSION: "5.10"
+    info:
+      path: macOS/Info.plist
+      properties:
+        NSAppTransportSecurity:
+          # personal LAN app: folia-server is plain http on the local network
+          NSAllowsArbitraryLoads: true
+        LSApplicationCategoryType: public.app-category.music
+  Folia-iOS:
+    type: application
+    platform: iOS
+    sources: [Shared]
+    dependencies:
+      - package: FoliaKit
+        products: [FoliaKit, FoliaUI]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ufii4.folia-ios
+        PRODUCT_NAME: Folia
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        DEVELOPMENT_TEAM: M67DYH2BBA
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.10"
+    info:
+      path: iOS/Info.plist
+      properties:
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        UIBackgroundModes: [audio]
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]

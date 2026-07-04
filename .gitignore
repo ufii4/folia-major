@@ -44,3 +44,8 @@ test/manual/lyric-audit-output/*
 .agents/
 skills-lock.json
 TODO.MD
+# Apple clients
+clients/apple/FoliaKit/.build/
+clients/apple/App/build/
+clients/apple/App/Folia.xcodeproj/
+clients/apple/**/*.xcuserstate

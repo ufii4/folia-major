@@ -458,4 +458,7 @@ async function serveNcmApi(options) {
 module.exports = {
   serveNcmApi,
   getModulesDefinitions,
+  // folia-server: exported so the service kernel can mount the express app
+  // in-process instead of running a second HTTP server. PR upstream someday.
+  constructServer,
 }

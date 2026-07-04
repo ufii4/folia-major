@@ -1,0 +1,16 @@
+{
+  "name": "folia-server",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Single-user music service kernel: embeds api-enhanced in-process, owns the NetEase session, and syncs playback state across clients.",
+  "license": "AGPL-3.0",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@neteasecloudmusicapienhanced/api": "file:./api-enhanced",
+    "express": "^5.2.1",
+    "ws": "^8.18.0"
+  }
+}
